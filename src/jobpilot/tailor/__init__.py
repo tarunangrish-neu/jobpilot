@@ -1,9 +1,10 @@
 """Tailor stage: plan with the LLM, verify, render to one page, record.
 
-For each job: ask the LLM for a selection plan, build the resume from master
-content only (verify.py vets rephrasings), render with Typst and drop the
-lowest-priority bullet until it fits on one page, optionally write a cover
-letter, then store paths and the audit trail on the job's Application.
+For each job: ask the LLM to rank and rephrase the master bullets, build the
+resume from master content only (verify.py vets rephrasings), render with
+Typst and drop the lowest-ranked bullet only while it runs longer than the
+full master resume does, optionally write a cover letter, then store paths
+and the audit trail on the job's Application.
 """
 
 from __future__ import annotations
@@ -25,7 +26,7 @@ from ..master_resume import MasterResume
 from ..models import Application, Company, Job
 from .cover_letter import CoverLetterResult, write_cover_letter
 from .render import copy_for_upload, render
-from .resume import TailorPlan, TailorReport, build_document, select_bullets
+from .resume import MAX_REPHRASINGS, TailorPlan, TailorReport, build_document, plan_schema, select_bullets
 from .verify import ResumeFacts
 
 log = logging.getLogger(__name__)
@@ -63,6 +64,27 @@ def output_dir(job_id: int) -> Path:
     return config.project_root() / "output" / str(job_id)
 
 
+_master_pages: dict[str, int] = {}
+
+
+async def page_limit(resume: MasterResume, facts: ResumeFacts) -> int:
+    """Pages a tailored resume may use: `tailor.max_pages`, else what the full master takes.
+
+    A tailored resume should read like the master -- same length, better order --
+    so bullets are only dropped when tailoring would make it longer than that.
+    """
+    configured = _tcfg().get("max_pages")
+    if configured:
+        return int(configured)
+    key = resume.model_dump_json()
+    if key not in _master_pages:
+        everything = [b.id for b in resume.all_bullets()]
+        doc, _ = build_document(resume, TailorPlan(), facts, everything)
+        pdf = config.project_root() / "output" / "_master" / "resume.pdf"
+        _master_pages[key] = max(1, await asyncio.to_thread(render, "resume.typ", doc, pdf))
+    return _master_pages[key]
+
+
 async def render_cover_letter(
     resume: MasterResume, job: JobInput, letter: CoverLetterResult
 ) -> Path:
@@ -90,27 +112,28 @@ async def tailor_one(
     use_cache: bool = True,
 ) -> TailorOutcome:
     cfg = _tcfg()
-    max_bullets = int(cfg.get("max_bullets", 12))
     outcome = TailorOutcome(job.id)
     try:
         plan = await llm.complete_json(
             TAILOR,
             TailorPlan,
             use_cache=use_cache,
+            json_schema=plan_schema(resume, int(cfg.get("max_rephrasings", MAX_REPHRASINGS))),
             title=job.title,
             company=job.company,
             description=job.description[:6000],
             resume=resume.for_prompt(),
-            max_bullets=max_bullets,
         )
         outcome.plan = plan
-        selected, unknown = select_bullets(resume, plan, max_bullets)
+        # Every master bullet, in the plan's order; `max_bullets` (0 = no cap) can shorten it.
+        selected, unknown = select_bullets(resume, plan, int(cfg.get("max_bullets") or 0) or None)
+        max_pages = await page_limit(resume, facts)
         pdf = output_dir(job.id) / "resume.pdf"
         trimmed = 0
         while True:
-            doc, report = build_document(resume, plan, facts, selected)
+            doc, report = build_document(resume, plan, facts, selected, job_text=job.description)
             pages = await asyncio.to_thread(render, "resume.typ", doc, pdf)
-            if pages <= 1 or len(selected) <= MIN_BULLETS:
+            if pages <= max_pages or len(selected) <= MIN_BULLETS:
                 break
             selected = selected[:-1]
             trimmed += 1

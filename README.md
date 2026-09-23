@@ -73,7 +73,7 @@ Or stage by stage:
 uv run jobpilot fetch [--hn]         # pull every active board (and HN if enabled)
 uv run jobpilot filter               # dedupe, title/location/age rules, visa screen
 uv run jobpilot score                # embed + LLM rerank; prints the ranked table
-uv run jobpilot tailor --top 30      # one-page resume PDFs (+ --cover-letter)
+uv run jobpilot tailor --top 30      # tailored resume PDFs, master length (+ --cover-letter)
 uv run jobpilot prefill --top 30     # fill forms in Chromium, screenshot, STOP
 uv run jobpilot draft-outreach       # HN / manual-apply messages
 uv run jobpilot import-lca FY2025_Q4.csv   # DOL LCA disclosure data (CSV export of the xlsx)
@@ -105,7 +105,11 @@ makes ~150-250 calls. Levers, biggest first:
    is 2-3x faster for those; keep the 7B for ranking and tailoring.
 5. **Or use a hosted model** (`llm.provider: openai_compatible`, e.g. Groq): 10x+ faster,
    but job descriptions and your resume leave your machine.
-6. **Reruns are cheap**: HTTP responses (6 h), embeddings, and LLM answers are cached, so
+6. **Output tokens are the cost.** qwen2.5-7b writes ~17 tokens/s on an M5; reading the
+   ~3k-token prompt takes ~4 s, or ~0 s when the previous call shared its prefix (prompts put
+   the fixed part — instructions, example, resume — first so Ollama reuses its cache). That
+   is why tailoring asks for ids, not text, and `tailor.max_rephrasings` exists.
+7. **Reruns are cheap**: HTTP responses (6 h), embeddings, and LLM answers are cached, so
    re-running a stage only pays for new jobs or changed prompts. `keep_alive: 30m` keeps
    models loaded between stages.
 
@@ -121,8 +125,26 @@ validation error, or changed form leaves the browser open and marks the job `nee
 
 ### What tailoring will and won't do
 
+A tailored resume is your master resume, same length, re-ordered and sharpened for one job:
+the model ranks every bullet against the job's requirements (the most relevant lead each
+role) and can rewrite up to `tailor.max_rephrasings` of the top ones in the XYZ pattern
+recruiters recommend — action verb, result/metric, then how — using the job's wording only
+for things the bullet already says. A rewrite that drops a number, technology, or ~20% of
+the text is rejected like a fabrication. With qwen2.5:7b and long bullets nearly every
+rewrite fails that check (it condenses), so the shipped setting is `max_rephrasings: 0`:
+ranking only, ~9 s per job instead of ~26 s. Skills are ordered in code (the ones the
+posting names first); none are dropped. Bullets are cut, lowest-ranked first, only if the result runs longer than the full
+master resume renders (`tailor.max_pages` / `tailor.max_bullets` shorten it on purpose).
+The model's reply is schema-constrained to real bullet ids, so it cannot select something
+that isn't in your resume.
+
+Local models are not fine-tuned here. Ollama has no training step; the prompt carries the
+rubric plus one worked example on a fictional resume (`llm/prompts.py`), which is the
+practical equivalent and costs nothing per job once cached.
+
 `tailor/verify.py` rejects any rephrased bullet that adds a number, technology, or proper noun
-not in the original bullet (or pads it with a keyword list); the original is used instead.
+not in the original bullet, borrows two or more of the posting's words that appear nowhere in
+your resume, or pads it with a keyword list; the original is used instead.
 Cover letters, drafted answers, and outreach messages are checked sentence by sentence; a
 sentence that states a new fact, or describes you in the job posting's words rather than your
 resume's, is dropped. With `qwen2.5:7b` most cover letters don't survive that and none is

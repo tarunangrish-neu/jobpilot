@@ -11,7 +11,14 @@ import pytest
 from conftest import REPO
 from jobpilot import master_resume
 from jobpilot.tailor.cover_letter import CoverLetterDraft, clean_letter
-from jobpilot.tailor.resume import TailorPlan, build_document, select_bullets
+from jobpilot.tailor.resume import (
+    TailorPlan,
+    _shape_problem,
+    build_document,
+    order_skills,
+    plan_schema,
+    select_bullets,
+)
 from jobpilot.tailor.verify import ResumeFacts, verify_free_text, verify_rephrase
 
 RESUME = master_resume.load(REPO / "config" / "master_resume.example.yaml")
@@ -117,7 +124,7 @@ def test_build_document_uses_only_master_content():
         },
         skills=["terraform", "Kubernetes", "COBOL"],
     )
-    selected, unknown = select_bullets(RESUME, plan, 12)
+    selected, unknown = select_bullets(RESUME, plan, 12, fill=False)
     assert selected == ["nw-k8s", "ll-ledger"] and unknown == ["made-up-id"]
 
     doc, report = build_document(RESUME, plan, FACTS, selected)
@@ -130,6 +137,89 @@ def test_build_document_uses_only_master_content():
     assert doc["projects"] == []  # no project bullet selected
     assert doc["skills"] == [{"group": "Infrastructure", "items": ["Terraform", "Kubernetes"]}]
     assert report.unknown_skills == ["COBOL"]
+
+
+def test_select_bullets_keeps_every_master_bullet_in_plan_order():
+    plan = TailorPlan(bullet_ids=["nw-k8s", "ll-ledger"])
+    selected, _ = select_bullets(RESUME, plan)
+    rest = [b.id for b in RESUME.all_bullets() if b.id not in ("nw-k8s", "ll-ledger")]
+    assert selected == ["nw-k8s", "ll-ledger"] + rest
+    assert select_bullets(RESUME, plan, 3)[0] == ["nw-k8s", "ll-ledger", rest[0]]
+
+
+def test_plan_schema_pins_ids_and_accepts_rephrasing_pairs():
+    schema = plan_schema(RESUME)
+    ids = schema["properties"]["bullet_ids"]["items"]["enum"]
+    assert set(ids) == set(B) and schema["properties"]["summary"]["enum"] == list(RESUME.summary)
+    assert schema["properties"]["rephrasings"]["items"]["properties"]["id"]["enum"] == ids
+    plan = TailorPlan.model_validate(
+        {"summary": "infra", "bullet_ids": ["nw-k8s"], "rephrasings": [{"id": "nw-k8s", "text": "x"}]}
+    )
+    assert plan.rephrasings == {"nw-k8s": "x"}
+    # v1 replies (a dict) cached before the change still validate.
+    assert TailorPlan.model_validate({"rephrasings": {"a": "b"}}).rephrasings == {"a": "b"}
+
+
+def test_skills_the_job_names_come_first_and_none_are_dropped():
+    ordered = order_skills(RESUME, "We run Kafka on Kubernetes; ago, go-to attitude.")
+    assert set(ordered) == set(RESUME.all_skills())
+    assert ordered[:2] == [s for s in RESUME.all_skills() if s in ("Kafka", "Kubernetes")]
+    assert "Go" not in ordered[:2]  # "ago" / "go-to" are not the language
+    doc, _ = build_document(RESUME, TailorPlan(), FACTS, ["nw-k8s"], job_text="Kubernetes and Terraform")
+    infra = next(g for g in doc["skills"] if g["group"] == "Infrastructure")
+    assert infra["items"][:2] == ["Kubernetes", "Terraform"]
+    assert sum(len(g["items"]) for g in doc["skills"]) == len(RESUME.all_skills())
+
+
+def test_rephrase_borrowing_job_claims_is_rejected():
+    jd = "Lead cross-functional stakeholders across product and design to drive roadmap strategy."
+    plan = TailorPlan(rephrasings={
+        "nw-k8s": "Led cross-functional stakeholders to automate Kubernetes cluster provisioning with Terraform, "
+                  "cutting setup from 2 days to 3 hours",
+    })
+    _, report = build_document(RESUME, plan, FACTS, ["nw-k8s"], job_text=jd)
+    assert report.rejected and "job wording" in report.rejected[0]["new_entities"][-1]
+
+
+def test_prompt_examples_sit_between_system_and_question():
+    from jobpilot.llm.prompts import TAILOR
+
+    msgs = TAILOR.render(resume="R", title="T", company="C", description="D")
+    assert [m["role"] for m in msgs] == ["system", "user", "assistant", "user"]
+    assert msgs[-1]["content"].startswith("MASTER RESUME\nR")  # stable prefix first, job last
+    TailorPlan.model_validate_json(msgs[2]["content"])  # the worked answer matches the schema
+
+
+def test_worked_example_obeys_the_fabrication_rules():
+    from jobpilot.llm import prompts
+    from jobpilot.master_resume import MasterResume
+
+    # Rebuild the fictional resume the example shows, then vet its rephrasings like real ones.
+    bullets = {}
+    for line in prompts._TAILOR_EXAMPLE_Q.splitlines():
+        line = line.strip()
+        if line.startswith("(") and ")" in line:
+            bid, text = line[1:].split(") ", 1)
+            bullets[bid] = text
+    fake = MasterResume.model_validate({
+        "contact": {"name": "Ex Ample"},
+        "experience": [{"company": "Tidewater Bank", "title": "Software Engineer", "dates": "2021 - 2024",
+                        "bullets": [{"id": k, "text": v} for k, v in bullets.items()]}],
+    })
+    facts = ResumeFacts.from_resume(fake)
+    plan = TailorPlan.model_validate_json(prompts._TAILOR_EXAMPLE_A)
+    for bid, text in plan.rephrasings.items():
+        assert not verify_rephrase(bullets[bid], text, facts), bid
+        assert not _shape_problem(bullets[bid], text, facts), bid
+
+
+def test_rephrase_that_drops_details_falls_back_to_original():
+    # Real qwen2.5-7b output shape: the stack and the user count quietly disappear.
+    original = B["ll-ledger"].text
+    thinned = "Designed a double-entry ledger service settling transactions with exactly-once semantics"
+    assert _shape_problem(original, thinned, FACTS).startswith("dropped")
+    shrunk = "Designed a double-entry ledger in Go settling 2M transactions per day"
+    assert _shape_problem(original, shrunk, FACTS) == "much shorter than the original"
 
 
 def test_keyword_stuffed_rephrase_falls_back_to_original():
@@ -223,5 +313,5 @@ def test_tailor_renders_one_page_and_records(tailor_root, fake_llm):
         assert app.resume_path.endswith("Alex_Example_Resume.pdf")
         assert "Ledgerline" in app.cover_letter_text
         audit = json.loads(app.tailoring_json)
-        assert audit["report"]["rejected"][0]["new_entities"] == ["70"]
+        assert audit["report"]["rejected"][0]["new_entities"] == ["70", "dropped 35"]
         assert sess.exec(select(Event).where(Event.type == "tailored")).one()

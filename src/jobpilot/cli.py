@@ -323,7 +323,7 @@ def tailor(
     cover_letter: bool = typer.Option(None, "--cover-letter/--no-cover-letter", help="Override tailor.cover_letter."),
     regenerate: bool = typer.Option(False, "--regenerate", help="Ignore cached LLM plans."),
 ) -> None:
-    """Build one-page tailored resumes (and cover letters) from the master resume."""
+    """Build tailored resumes (and cover letters) from the master resume."""
     from .tailor import run_tailoring
 
     db.init_db()

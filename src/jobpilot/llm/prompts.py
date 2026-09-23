@@ -13,12 +13,17 @@ class Prompt:
     user: str
     # Output cap (tokens). Generous enough for valid JSON; stops a runaway reply early.
     max_tokens: Optional[int] = None
+    # Worked (user, assistant) turns placed between the system prompt and the real
+    # question. They are identical on every call, so Ollama reuses their KV cache.
+    examples: tuple[tuple[str, str], ...] = ()
 
     def render(self, **variables: object) -> list[dict[str, str]]:
-        return [
-            {"role": "system", "content": self.system.strip()},
-            {"role": "user", "content": Template(self.user).substitute(**variables).strip()},
-        ]
+        messages = [{"role": "system", "content": self.system.strip()}]
+        for question, answer in self.examples:
+            messages.append({"role": "user", "content": question.strip()})
+            messages.append({"role": "assistant", "content": answer.strip()})
+        messages.append({"role": "user", "content": Template(self.user).substitute(**variables).strip()})
+        return messages
 
 
 VISA_CHECK = Prompt(
@@ -52,33 +57,82 @@ $excerpts
 )
 
 
+# A fictional candidate: the example teaches the moves, never facts to copy.
+_TAILOR_EXAMPLE_Q = """
+MASTER RESUME
+SUMMARY VARIANTS
+[backend] Backend engineer with 4 years building payment APIs in Java and PostgreSQL.
+[data] Data engineer focused on batch pipelines and reporting.
+
+EXPERIENCE
+Software Engineer | Tidewater Bank | 2021 - 2024
+  (tw-api) Responsible for maintaining the card authorization API written in Java, which handled 3,000 requests per second
+  (tw-batch) Worked on nightly settlement batch jobs and helped reduce their runtime from 6 hours to 90 minutes using Spark
+  (tw-oncall) Participated in the on-call rotation for 4 services
+  (tw-docs) Wrote internal documentation for onboarding
+Software Engineer Intern | Brightline Labs | Summer 2020
+  (bl-dash) Built a React dashboard for internal sales metrics
+
+PROJECTS
+Ledger CLI | 2023
+  (lc-rust) Wrote a double-entry bookkeeping CLI in Rust with property-based tests
+
+JOB: Backend Engineer, Payments at Example Co
+You will own high-throughput Java services behind our card-issuing platform, make our
+settlement pipelines faster and more reliable, and join the on-call rotation.
+Experience with Spark or other batch processing is a plus.
+"""
+
+_TAILOR_EXAMPLE_A = """
+{"summary": "backend", "bullet_ids": ["tw-api", "tw-batch", "tw-oncall", "lc-rust"], "rephrasings": [{"id": "tw-api", "text": "Maintained the card authorization API written in Java, sustaining 3,000 requests per second"}, {"id": "tw-batch", "text": "Helped cut the runtime of nightly settlement batch jobs from 6 hours to 90 minutes, working on them in Spark"}, {"id": "tw-oncall", "text": "Served in the on-call rotation for 4 services"}]}
+"""
+
 TAILOR = Prompt(
     name="tailor",
-    version=1,
-    max_tokens=2000,
+    version=5,
+    # No skills list (ordered in code), top 12 ids, at most 4 rephrasings, compact JSON.
+    max_tokens=800,
     system="""
-You tailor a resume to one job. You may ONLY select, reorder, and lightly rephrase
-content that already exists in the master resume. Never invent or alter employers,
-titles, dates, numbers, metrics, degrees, tools, or skills. A rephrasing must keep
-every number and technology of its original bullet and add none; if you cannot
-improve a bullet under that rule, do not rephrase it.
+You are an expert technical resume writer. You tailor one candidate's master resume
+to one job by SELECTING, ORDERING, and REPHRASING existing bullets. You never add
+facts: no new employers, titles, dates, numbers, metrics, tools, technologies,
+skills, or scope. Anything new is automatically rejected.
 
-Choose:
-- "summary": the KEY (in square brackets) of the best summary variant.
-- "bullet_ids": the ids (in parentheses) of the most relevant bullets, most relevant
-  first, at most $max_bullets. Prefer bullets that prove skills the job asks for.
-- "rephrasings": optional {bullet_id: new text} to foreground the job's language.
-- "skills": skills copied exactly from the SKILLS section, most relevant first.
+1. "bullet_ids": the 12 most relevant bullets, most relevant first. Every bullet stays
+   on the resume; your ranking decides which come first within each role and which
+   go if space runs out. Unlisted bullets follow in their original order.
+   - Find the job's must-have requirements. Rank bullets that prove them highest.
+   - Cover different requirements rather than several bullets proving the same one.
+   - Prefer quantified bullets and recent roles.
+2. "rephrasings" (at most 4, only for your top bullets, only when it clearly helps).
+   Strong resume bullets follow the XYZ pattern, "accomplished X, measured by Y,
+   by doing Z":
+   - Start with a strong past-tense action verb (Built, Cut, Designed, Led,
+     Migrated, Scaled). Drop filler like "Responsible for", "Worked on", "Various".
+   - Put the result or metric early, then how it was done.
+   - Where the bullet already describes something the job names, use the job's
+     wording for it. Never use job wording for something the bullet does not say.
+   - Keep EVERY number and technology from the original; add none. Keep the scope
+     honest: "helped" stays "helped", "participated" never becomes "led".
+   - A rephrasing reorders the original's clauses and strengthens its verbs; it
+     removes NO clause. Keep every detail (stack, scale, users, ownership) at about
+     the same length, with no added parentheses or keyword lists. A rewrite that
+     drops a detail or is much shorter is rejected.
+   - Never copy a bullet unchanged. If a bullet is already strong, leave it out.
+3. "summary": the KEY (in square brackets) of the best-matching summary variant.
 
-Reply with JSON:
-{"summary": "key", "bullet_ids": ["id", ...], "rephrasings": {"id": "text"}, "skills": ["Skill", ...]}
+Reply with compact JSON on one line:
+{"summary": "key", "bullet_ids": ["id", ...], "rephrasings": [{"id": "id", "text": "..."}]}
 """,
+    examples=((_TAILOR_EXAMPLE_Q, _TAILOR_EXAMPLE_A),),
+    # The resume comes first: system + example + resume is the same for every job, so
+    # a local model only has to process the job description fresh each time.
     user="""
-JOB: $title at $company
-$description
-
 MASTER RESUME
 $resume
+
+JOB: $title at $company
+$description
 """,
 )
 
