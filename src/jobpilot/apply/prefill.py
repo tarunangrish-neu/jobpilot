@@ -8,8 +8,10 @@ wall, unknown required field, or a control that wouldn't take its value.
 
 from __future__ import annotations
 
+import asyncio
 import json
 import sys
+import time
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Callable, Optional
@@ -226,7 +228,13 @@ async def run_prefill(
     url_for: Optional[UrlFn] = None,
     wait_for_human: bool = True,
     dry_run: bool = False,
+    parallel: Optional[int] = None,
 ) -> list[PrefillResult]:
+    """Prefill (or dry-run) jobs in `parallel` tabs at once; results keep ranking order.
+
+    Most of a form's time is page load and screenshots, so tabs overlap well. LLM
+    drafts still queue for the shared model slots (llm.concurrency).
+    """
     from .. import master_resume
 
     llm = llm or LLMClient()
@@ -234,17 +242,30 @@ async def run_prefill(
     bank = bank or AnswerBank.load()
     facts = ResumeFacts.from_resume(resume)
     url_for = url_for or _url
+    if parallel is None:
+        parallel = int(config.settings().get("apply", {}).get("prefill_concurrency", 3))
+    tabs = asyncio.Semaphore(max(1, parallel))
 
-    results: list[PrefillResult] = []
-    async with Browser(headless=headless) as browser:
-        for job, company, app in _load(top, job_ids):
-            url = url_for(job, company)
+    rows = _load(top, job_ids)
+    done = 0
+    started = time.monotonic()
+
+    async def one(job, company, app) -> PrefillResult:
+        nonlocal done
+        url = url_for(job, company)
+        async with tabs:
             result = await prefill_one(browser, llm, bank, resume, facts, job, company, app, url, dry_run=dry_run)
-            if dry_run:
-                _record_dry_run(result, app, url)
-            else:
-                _record(result, app)
-            results.append(result)
+        if dry_run:
+            _record_dry_run(result, app, url)
+        else:
+            _record(result, app)
+        done += 1
+        print(f"[{done}/{len(rows)}] {time.monotonic() - started:5.0f}s  job {job.id} "
+              f"({company.name if company else '?'}): {result.status}", flush=True)
+        return result
+
+    async with Browser(headless=headless) as browser:
+        results = list(await asyncio.gather(*(one(*row) for row in rows)))
 
         waiting = [r for r in results if r.page is not None]
         if waiting and wait_for_human and not browser.headless:

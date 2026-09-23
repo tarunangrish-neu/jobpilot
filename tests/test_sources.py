@@ -174,7 +174,7 @@ class _FakeClient:
         self.responses = responses
         self.calls: list[str] = []
 
-    async def get_json(self, url):
+    async def get_json(self, url, max_age_hours=None):
         self.calls.append(url)
         return self.responses.get(url, (404, None))
 

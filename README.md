@@ -109,6 +109,19 @@ makes ~150-250 calls. Levers, biggest first:
    re-running a stage only pays for new jobs or changed prompts. `keep_alive: 30m` keeps
    models loaded between stages.
 
+Fetch and prefill are not LLM-bound:
+
+- **Fetch** is bounded by the busiest API host, since requests to one host are ≥1 s apart
+  (every Greenhouse board shares `boards-api.greenhouse.io`). All hosts run in parallel and
+  HN overlaps the boards; the log prints each board as it lands. A cold fetch of the seed list
+  takes ~3 min, almost all of it SmartRecruiters detail pages (one per plausible posting, one
+  host). Those are cached for `http.detail_cache_ttl_hours` (72 h), so a daily fetch only
+  pays for postings that are new.
+- **Prefill / dry run** time is page loads and screenshots, so forms run in parallel tabs
+  (`apply.prefill_concurrency`, or "Forms at once" on the card; default 3). LLM drafts still
+  take turns on the model. Only one process holds the browser profile at a time: a submit
+  approved during a prefill run waits for it instead of failing.
+
 ### How submission works
 
 `prefill` never submits. In `jobpilot ui`, a job's **Approve & Submit** button is disabled
@@ -118,6 +131,10 @@ from the reviewed answers, re-verifies every field, clicks submit, and screensho
 confirmation page. The submitter refuses anything without a UI approval in the audit log, any
 job already submitted, and anything past `apply.daily_submission_cap` (UTC day). A CAPTCHA,
 validation error, or changed form leaves the browser open and marks the job `needs_human`.
+
+The **Ready to submit** page walks the prefilled jobs best-first: review one, tick the box,
+approve, and it moves to the next while that one submits in the background. It shows today's
+count against the cap and a log line for each submission in flight. There is no approve-all.
 
 ### What tailoring will and won't do
 

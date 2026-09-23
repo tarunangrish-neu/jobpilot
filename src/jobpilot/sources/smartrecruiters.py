@@ -17,6 +17,7 @@ Quirks verified against live responses:
 
 from __future__ import annotations
 
+import asyncio
 import logging
 from typing import Any, Optional
 
@@ -107,10 +108,18 @@ async def fetch(client, company: dict[str, Any]) -> list[JobPosting]:
         return []
 
     cfg = config.settings().get("filters", {})
-    details: dict[str, dict[str, Any]] = {}
-    for job in jobs:
-        if worth_detail(job, cfg):
-            status, detail = await client.get_json(DETAIL_URL.format(token=token, id=job["id"]))
-            if status == 200 and isinstance(detail, dict):
-                details[str(job["id"])] = detail
+    wanted = [job for job in jobs if worth_detail(job, cfg)]
+    # A posting's details rarely change, so they're cached for days while the list
+    # refreshes every few hours: a daily fetch only pays for postings that are new.
+    max_age = float(config.settings().get("http", {}).get("detail_cache_ttl_hours", 72))
+    # Queued together, the client's per-host spacing issues one a second, instead of
+    # one a second *plus* each response's round trip when awaited one by one.
+    replies = await asyncio.gather(
+        *(client.get_json(DETAIL_URL.format(token=token, id=job["id"]), max_age) for job in wanted)
+    )
+    details = {
+        str(job["id"]): detail
+        for job, (status, detail) in zip(wanted, replies)
+        if status == 200 and isinstance(detail, dict)
+    }
     return parse({"content": jobs}, company["name"], details)

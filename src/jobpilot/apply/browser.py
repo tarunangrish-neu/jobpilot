@@ -7,6 +7,8 @@ button -- that lives in apply/submit.py behind the approval checks.
 
 from __future__ import annotations
 
+import asyncio
+import fcntl
 import logging
 from pathlib import Path
 from typing import Optional
@@ -58,22 +60,56 @@ class Browser:
         self.headless = bool(cfg.get("headless", False)) if headless is None else headless
         self._pw = None
         self.context = None
+        self._lock = None
+
+    async def _acquire_profile(self) -> None:
+        """Wait until no other process has the profile open.
+
+        Chromium refuses a second instance on one user-data dir, so a submit
+        approved in the UI while a prefill run is going would otherwise crash
+        into needs_human. With the lock it just starts when the prefill ends.
+        """
+        profile_dir().mkdir(parents=True, exist_ok=True)
+        self._lock = open(profile_dir() / ".jobpilot.lock", "a")
+        waited = False
+        while True:
+            try:
+                fcntl.flock(self._lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                return
+            except BlockingIOError:
+                if not waited:
+                    print("browser profile is in use by another JobPilot run; waiting for it...", flush=True)
+                    waited = True
+                await asyncio.sleep(1.0)
+
+    def _release_profile(self) -> None:
+        if self._lock is not None:
+            fcntl.flock(self._lock, fcntl.LOCK_UN)
+            self._lock.close()
+            self._lock = None
 
     async def __aenter__(self) -> "Browser":
         from playwright.async_api import async_playwright
 
-        self._pw = await async_playwright().start()
-        profile_dir().mkdir(parents=True, exist_ok=True)
-        self.context = await self._pw.chromium.launch_persistent_context(
-            str(profile_dir()), headless=self.headless, viewport={"width": 1280, "height": 900}
-        )
+        await self._acquire_profile()
+        try:
+            self._pw = await async_playwright().start()
+            self.context = await self._pw.chromium.launch_persistent_context(
+                str(profile_dir()), headless=self.headless, viewport={"width": 1280, "height": 900}
+            )
+        except BaseException:
+            await self.__aexit__()
+            raise
         return self
 
     async def __aexit__(self, *exc) -> None:
-        if self.context is not None:
-            await self.context.close()
-        if self._pw is not None:
-            await self._pw.stop()
+        try:
+            if self.context is not None:
+                await self.context.close()
+            if self._pw is not None:
+                await self._pw.stop()
+        finally:
+            self._release_profile()
 
     async def new_page(self):
         return await self.context.new_page()

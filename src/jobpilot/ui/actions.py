@@ -147,6 +147,29 @@ def approve_and_submit(job_id: int, edits: Optional[dict[str, str]] = None):
     return submit.launch_submit(job_id)
 
 
+def submit_board() -> dict[str, Any]:
+    """Today's submission count against the cap, and approved jobs whose submit worker is running."""
+    from ..apply.submit import submitted_today
+
+    with db.session() as sess:
+        today = submitted_today(sess)
+        approved = sess.exec(
+            select(Job, Company).join(Company, Job.company_id == Company.id, isouter=True)
+            .where(Job.status == "approved")
+        ).all()
+        in_flight = [{"id": j.id, "company": c.name if c else "", "title": j.title} for j, c in approved]
+    cap = int(config.settings().get("apply", {}).get("daily_submission_cap", 40))
+    return {"today": today, "cap": cap, "in_flight": in_flight}
+
+
+def submit_log_tail(job_id: int, lines: int = 3) -> str:
+    try:
+        text = (config.project_root() / "logs" / f"submit_{job_id}.log").read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return ""
+    return "\n".join(ln for ln in text.splitlines()[-lines:] if "VIRTUAL_ENV" not in ln)
+
+
 def regenerate(job_id: int) -> str:
     """Re-run tailoring for one job, ignoring cached LLM plans."""
     from .. import master_resume
@@ -285,7 +308,8 @@ def next_steps(counts: dict[str, int]) -> list[tuple[str, str]]:
     if counts["tailored"] > counts["dry_run"]:
         steps.append(("dry-run", "Preview how the tailored jobs' forms would be filled."))
     if counts["prefilled"]:
-        steps.append(("review", f"{counts['prefilled']} prefilled applications are waiting for your review."))
+        steps.append(("review", f"{counts['prefilled']} prefilled applications are waiting for you on "
+                                "the Ready to submit page."))
     return steps
 
 

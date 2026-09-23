@@ -127,10 +127,11 @@ def test_pipeline_page_renders_and_pauses_while_busy(temp_root, quiet_machine):
     labels = [m.label for m in at.metric]
     assert "Waiting for filter" in labels and "Needs you" in labels
     run_buttons = [b for b in at.button if b.label.startswith("Run ")]
-    assert len(run_buttons) == 6
+    assert len(run_buttons) == 7  # six stages + the one-click fetch -> tailor
     # Prefill stays disabled until the upload warning is acknowledged.
     assert next(b for b in run_buttons if b.label == "Run prefill").disabled
     assert not next(b for b in run_buttons if b.label == "Run filter").disabled
+    assert not next(b for b in run_buttons if b.label == "Run all four").disabled
 
     with db.session() as sess:
         sess.add(Run(stage="score", pid=os.getpid(), status="running"))
@@ -138,3 +139,50 @@ def test_pipeline_page_renders_and_pauses_while_busy(temp_root, quiet_machine):
     at = AppTest.from_file(APP, default_timeout=30).run()
     assert not at.exception
     assert all(b.disabled for b in at.button if b.label.startswith("Run "))
+
+
+def test_ready_to_submit_walks_prefilled_jobs_and_needs_a_tick_per_job(temp_root, quiet_machine, monkeypatch):
+    from streamlit.testing.v1 import AppTest
+
+    from jobpilot import db
+    from jobpilot.models import Application, Job, JobPosting
+    from jobpilot.ui import actions
+
+    db.init_db()
+    with db.session() as sess:
+        db.sync_companies(sess, [{"name": "Acme", "ats": "lever", "token": "acme"}])
+        for i in range(2):
+            db.upsert_posting(sess, JobPosting(source="lever", external_id=str(i), company_name="Acme",
+                                               title=f"Backend {i}"), 1)
+        for job in sess.exec(select(Job)).all():
+            job.status, job.final_score = "prefilled", 90.0 - job.id
+            sess.add(Application(job_id=job.id, answers_json=json.dumps({"Full name": "Alex"})))
+        sess.commit()
+
+    approved = []
+
+    def fake_approve(job_id, edits=None):  # the real one launches a browser worker
+        approved.append(job_id)
+        with db.session() as sess:
+            db.set_status(sess, sess.get(Job, job_id), "approved", reason="test")
+            sess.commit()
+
+    monkeypatch.setattr(actions, "approve_and_submit", fake_approve)
+    at = AppTest.from_file(APP, default_timeout=30).run()
+    at.sidebar.radio[0].set_value("Ready to submit").run()
+    assert not at.exception
+    assert at.title[0].value == "Ready to submit"
+    assert any("1 of 2" in m.value for m in at.markdown)
+    approve = next(b for b in at.button if b.label == "Approve & Submit")
+    assert approve.disabled  # nothing goes out without the per-job review tick
+
+    next(b for b in at.button if b.label == "Next →").click().run()
+    assert any("2 of 2" in m.value for m in at.markdown)
+    next(b for b in at.button if b.label == "← Previous").click().run()
+
+    at.checkbox(key="reviewed-1").check().run()
+    next(b for b in at.button if b.label == "Approve & Submit").click().run()
+    assert approved == [1]
+    assert any("Approved job 1" in s.value for s in at.success)
+    assert any("1 of 1" in m.value for m in at.markdown)  # moved on to the remaining job
+    assert at.checkbox(key="reviewed-2").value is False

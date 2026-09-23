@@ -179,9 +179,12 @@ def _actions(d: actions.Detail, edits: dict[str, str]) -> None:
 
         try:
             actions.approve_and_submit(job.id, edits or None)
-            st.success("Approved. A browser window is submitting this one application; refresh to see the result.")
         except SubmitRefused as exc:
             st.error(f"Not submitted: {exc}")
+        else:
+            # Rerun the page so "Ready to submit" moves straight on to the next application.
+            st.session_state["flash"] = f"Approved job {job.id}; submitting it in the background."
+            st.rerun()
     if c2.button("Save edits", disabled=not edits, key=f"edit-{job.id}"):
         actions.save_edits(job.id, edits)
         st.success("Edits saved.")
@@ -225,8 +228,52 @@ def job_view(job_id: int) -> None:
     _actions(d, edits)
 
 
+def _show_flash() -> None:
+    if flash := st.session_state.pop("flash", None):
+        st.success(flash)
+
+
+def submit_page() -> None:
+    """Prefilled applications one at a time: review, approve, and move on to the next.
+
+    Every job still needs its own "I reviewed this" tick and Approve & Submit click;
+    this page only saves the hunting through the full queue between them.
+    """
+    st.title("Ready to submit")
+    _show_flash()
+    board = actions.submit_board()
+    tiles = st.columns(3)
+    tiles[0].metric("Submitted today (UTC)", f"{board['today']} / {board['cap']}")
+    rows = actions.queue(("prefilled",), exclude_sources=("hn",))
+    tiles[1].metric("Waiting for your review", len(rows))
+    tiles[2].metric("Submitting now", len(board["in_flight"]))
+    if board["in_flight"]:
+        with st.expander(f"{len(board['in_flight'])} approved, submitting in the background"):
+            for item in board["in_flight"]:
+                st.markdown(f"**{item['company']} — {item['title']}** (job {item['id']})")
+                st.code(actions.submit_log_tail(item["id"]) or "(waiting for the browser)", language=None)
+            st.button("Refresh", key="refresh-submits")
+    if not rows:
+        st.info("Nothing is prefilled. Run **Prefill** on the Pipeline page, then come back here.")
+        return
+
+    ids = [r["id"] for r in rows]
+    pos = st.session_state["submit-pos"] = min(st.session_state.get("submit-pos", 0), len(ids) - 1)
+
+    def step(delta: int) -> None:  # a callback, so the buttons below render with the new position
+        st.session_state["submit-pos"] += delta
+
+    prev, where, nxt = st.columns([1, 4, 1], vertical_alignment="center")
+    prev.button("← Previous", disabled=pos == 0, width="stretch", on_click=step, args=(-1,))
+    nxt.button("Next →", disabled=pos >= len(ids) - 1, width="stretch", on_click=step, args=(1,))
+    where.markdown(f"**{pos + 1} of {len(ids)}**, best score first")
+    st.divider()
+    job_view(ids[pos])
+
+
 def queue_page() -> None:
     st.title("Review queue")
+    _show_flash()
     with st.sidebar:
         statuses = st.multiselect("Status", JOB_STATUSES, default=list(actions.QUEUE_STATUSES))
         visa = st.multiselect("Visa flag", ["ok", "unclear", "blocked"], default=[])
@@ -330,13 +377,38 @@ def _stage_args(key: str) -> list[str] | None:
         return ["--top", str(top), "--cover-letter" if cover else "--no-cover-letter"]
     if key == "dry-run":
         top = st.number_input("Dry-run the top N tailored jobs", 1, 100, 15, 1, key="opt-dry-top")
-        return ["--top", str(top), "--dry-run"]
+        return ["--top", str(top), "--dry-run", *_parallel_arg("dry")]
     if key == "prefill":
         top = st.number_input("Prefill the top N", 1, 50, 5, 1, key="opt-prefill-top")
+        parallel = _parallel_arg("prefill")
         ok = st.checkbox("I understand this uploads my resume to each company's form (nothing is submitted)",
                          key="opt-prefill-ok")
-        return ["--top", str(top), "--headless"] if ok else None
+        return ["--top", str(top), "--headless", *parallel] if ok else None
     return []
+
+
+def _parallel_arg(key: str) -> list[str]:
+    n = st.number_input("Forms at once (separate tabs)", 1, 6, 3, 1, key=f"opt-{key}-parallel",
+                        help="Page loads dominate; LLM drafts still take turns on the model.")
+    return ["--parallel", str(n)]
+
+
+def _one_click(reason: str | None) -> None:
+    """fetch -> filter -> rank -> tailor as one run: everything that uploads nothing."""
+    from jobpilot import runs
+
+    with st.container(border=True):
+        text, top_col, go = st.columns([4, 1, 1], vertical_alignment="center")
+        text.markdown("**Find & prepare, one click** — fetch, filter, rank, and tailor in one run. "
+                      "Nothing is uploaded or submitted; afterwards, dry-run or prefill the results below.")
+        top = top_col.number_input("Top N", 1, 100, 15, 1, key="opt-daily-top")
+        if go.button("Run all four", key="run-daily", type="primary", disabled=bool(reason), width="stretch"):
+            try:
+                run = runs.start("run-daily", ["--top", str(top), "--skip-prefill"])
+                st.toast(f"Started fetch → tailor (run #{run.id})")
+            except RuntimeError as exc:
+                st.error(str(exc))
+            st.rerun()
 
 
 @st.fragment(run_every=3)
@@ -389,6 +461,7 @@ def pipeline_page() -> None:
     st.subheader("Run a stage")
     _live_runs()
     reason = runs.busy()
+    _one_click(reason)
     for row in (STAGE_CARDS[:3], STAGE_CARDS[3:]):
         cols = st.columns(3)
         for col, (key, command, title, what) in zip(cols, row):
@@ -439,5 +512,6 @@ def pipeline_page() -> None:
             st.caption("No runs started from the UI yet.")
 
 
-PAGES = {"Pipeline": pipeline_page, "Review queue": queue_page, "Manual apply": manual_page, "Stats": stats_page}
+PAGES = {"Pipeline": pipeline_page, "Ready to submit": submit_page, "Review queue": queue_page,
+         "Manual apply": manual_page, "Stats": stats_page}
 PAGES[st.sidebar.radio("View", list(PAGES))]()

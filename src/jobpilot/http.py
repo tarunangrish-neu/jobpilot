@@ -57,14 +57,16 @@ class PoliteClient:
     def _cache_file(self, url: str) -> Path:
         return self.cache_dir / f"{hashlib.sha256(url.encode()).hexdigest()}.json"
 
-    def _read_cache(self, url: str) -> Optional[dict[str, Any]]:
+    def _read_cache(self, url: str, max_age_hours: Optional[float] = None) -> Optional[dict[str, Any]]:
         if not self.use_cache:
             return None
         f = self._cache_file(url)
         if not f.exists():
             return None
-        # cache_ttl_hours <= 0 means "never serve from cache", not "cache forever".
-        if self.cache_ttl <= 0 or (time.time() - f.stat().st_mtime) > self.cache_ttl:
+        # cache_ttl_hours <= 0 means "never serve from cache", not "cache forever",
+        # and it turns off longer per-call ages too.
+        ttl = self.cache_ttl if max_age_hours is None else max_age_hours * 3600.0
+        if self.cache_ttl <= 0 or (time.time() - f.stat().st_mtime) > ttl:
             return None
         try:
             return json.loads(f.read_text(encoding="utf-8"))
@@ -85,26 +87,50 @@ class PoliteClient:
     async def _throttle(self, host: str) -> None:
         """Ensure >= min_interval seconds since the last hit on this host."""
         async with self._host_locks[host]:
-            last = self._last_request.get(host)
-            if last is not None:
-                wait = self.min_interval - (time.monotonic() - last)
-                if wait > 0:
-                    await asyncio.sleep(wait)
+            await self._wait_turn(host)
             self._last_request[host] = time.monotonic()
 
-    async def get_text(self, url: str) -> tuple[int, str]:
-        """GET a URL, returning (status_code, body). Cached and rate-limited."""
-        cached = self._read_cache(url)
+    async def _wait_turn(self, host: str) -> None:
+        last = self._last_request.get(host)
+        if last is not None:
+            wait = self.min_interval - (time.monotonic() - last)
+            if wait > 0:
+                await asyncio.sleep(wait)
+
+    async def _send(self, method: str, url: str, **kwargs: Any) -> httpx.Response:
+        """One request under the per-host spacing and the global concurrency cap.
+
+        The spacing wait happens *before* a concurrency slot is taken. Most boards
+        share a few API hosts (every Greenhouse board is boards-api.greenhouse.io),
+        so a slot held while sleeping lets one busy host starve every other host,
+        and a fetch takes the sum of all hosts' queues instead of the longest one.
+        Only one request per host waits for a slot at a time, so request starts on
+        a host stay >= min_interval apart.
+        """
+        host = httpx.URL(url).host or url
+        async with self._host_locks[host]:
+            await self._wait_turn(host)
+            await self._sem.acquire()
+            self._last_request[host] = time.monotonic()
+        try:
+            return await self._client.request(method, url, **kwargs)
+        finally:
+            self._sem.release()
+
+    async def get_text(self, url: str, max_age_hours: Optional[float] = None) -> tuple[int, str]:
+        """GET a URL, returning (status_code, body). Cached and rate-limited.
+
+        `max_age_hours` overrides cache_ttl_hours for this URL, e.g. a posting's
+        detail page, which barely changes while the board list does.
+        """
+        cached = self._read_cache(url, max_age_hours)
         if cached is not None:
             return cached["status"], cached["body"]
 
         if self._client is None:
             raise RuntimeError("PoliteClient must be used as an async context manager")
 
-        host = httpx.URL(url).host or url
-        async with self._sem:
-            await self._throttle(host)
-            resp = await self._client.get(url)
+        resp = await self._send("GET", url)
 
         body = resp.text
         # Only cache successes; a transient 5xx should not be sticky.
@@ -123,18 +149,15 @@ class PoliteClient:
         if self._client is None:
             raise RuntimeError("PoliteClient must be used as an async context manager")
 
-        host = httpx.URL(url).host or url
-        async with self._sem:
-            await self._throttle(host)
-            resp = await self._client.post(url, json=payload, headers=headers)
+        resp = await self._send("POST", url, json=payload, headers=headers)
         try:
             return resp.status_code, resp.json()
         except json.JSONDecodeError:
             return resp.status_code, None
 
-    async def get_json(self, url: str) -> tuple[int, Any]:
+    async def get_json(self, url: str, max_age_hours: Optional[float] = None) -> tuple[int, Any]:
         """GET a URL and parse JSON. Returns (status, parsed-or-None)."""
-        status, body = await self.get_text(url)
+        status, body = await self.get_text(url, max_age_hours)
         if status != 200:
             return status, None
         try:

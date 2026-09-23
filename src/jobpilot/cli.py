@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import time
 import shutil
 from pathlib import Path
 from typing import Any
@@ -66,9 +67,14 @@ def init() -> None:
     typer.echo(f"{len(index)} companies registered from config/companies.yaml")
 
 
-async def _fetch_all(entries: list[dict[str, Any]]) -> dict[str, Any]:
-    """Fetch every configured board concurrently under the shared rate limiter."""
+async def _fetch_all(entries: list[dict[str, Any]], include_hn: bool = False) -> tuple[dict[str, Any], Any]:
+    """Fetch every configured board (and HN) concurrently under the shared rate limiter.
+
+    Returns (board results, HN's (postings, info) or None). Prints a line as each
+    board finishes, so the Pipeline page's live log shows fetch progress.
+    """
     results: dict[str, Any] = {}
+    started = time.monotonic()
     async with PoliteClient() as client:
 
         async def one(entry: dict[str, Any]) -> None:
@@ -76,31 +82,41 @@ async def _fetch_all(entries: list[dict[str, Any]]) -> dict[str, Any]:
             key = f"{entry['ats']}/{entry['token']}"
             if adapter is None:
                 results[key] = (entry, [], f"unknown ats '{entry['ats']}'")
-                return
-            try:
-                postings = await adapter.fetch(client, entry)
-                results[key] = (entry, postings, "")
-            except Exception as exc:  # noqa: BLE001 - one bad board must not kill the run
-                results[key] = (entry, [], f"{type(exc).__name__}: {exc}")
+            else:
+                try:
+                    postings = await adapter.fetch(client, entry)
+                    results[key] = (entry, postings, "")
+                except Exception as exc:  # noqa: BLE001 - one bad board must not kill the run
+                    results[key] = (entry, [], f"{type(exc).__name__}: {exc}")
+            _, postings, error = results[key]
+            typer.echo(f"[{len(results)}/{len(entries)}] {time.monotonic() - started:5.1f}s  "
+                       f"{entry['name']} ({entry['ats']}): {error or f'{len(postings)} postings'}")
 
-        await asyncio.gather(*(one(e) for e in entries))
-    return results
+        async def hn_thread() -> Any:
+            # One host plus LLM extraction: it overlaps the boards instead of running after them.
+            from .llm import LLMClient
+            from .sources import hn
+
+            try:
+                return await hn.fetch(client, LLMClient(), config.settings().get("hn", {}))
+            except Exception as exc:  # noqa: BLE001
+                return [], {"error": f"{type(exc).__name__}: {exc}"}
+
+        boards = asyncio.gather(*(one(e) for e in entries))
+        if include_hn:
+            _, hn_result = await asyncio.gather(boards, hn_thread())
+        else:
+            await boards
+            hn_result = None
+    return results, hn_result
 
 
 def _slug(name: str) -> str:
     return "-".join("".join(c if c.isalnum() else " " for c in name.lower()).split())[:60] or "unknown"
 
 
-def _fetch_hn() -> list[str]:
-    """Fetch the latest HN thread; returns a table row."""
-    from .llm import LLMClient
-    from .sources import hn
-
-    async def run():
-        async with PoliteClient() as client:
-            return await hn.fetch(client, LLMClient(), config.settings().get("hn", {}))
-
-    postings, info = asyncio.run(run())
+def _store_hn(postings: list, info: dict[str, Any]) -> list[str]:
+    """Save fetched HN postings; returns a table row."""
     inserted = updated = 0
     with db.session() as sess:
         entries = {p.company_name: {"name": p.company_name, "ats": "hn", "token": _slug(p.company_name)} for p in postings}
@@ -128,7 +144,7 @@ def fetch(
 
     db.init_db()
     include_hn = config.settings().get("hn", {}).get("enabled", False) if hn is None else hn
-    results = asyncio.run(_fetch_all(entries))
+    results, hn_result = asyncio.run(_fetch_all(entries, include_hn))
 
     rows: list[list[str]] = []
     with db.session() as sess:
@@ -153,8 +169,8 @@ def fetch(
                     error or "ok",
                 ]
             )
-    if include_hn:
-        rows.append(_fetch_hn())
+    if hn_result is not None:
+        rows.append(_store_hn(*hn_result))
     with db.session() as sess:
         total = sess.exec(select(func.count()).select_from(Job)).one()
 
@@ -314,6 +330,8 @@ def prefill(
         help="Only read each form and record how it would be filled (shown in the UI). "
         "Types nothing, uploads nothing, changes no job status.",
     ),
+    parallel: int = typer.Option(None, "--parallel", min=1, max=8,
+                                 help="Forms open at once in separate tabs (default: apply.prefill_concurrency)."),
 ) -> None:
     """Fill application forms in the browser and STOP before submitting."""
     from .apply.prefill import run_prefill
@@ -324,7 +342,7 @@ def prefill(
     try:
         results = asyncio.run(
             run_prefill(top=top, job_ids=job or None, llm=_llm(), resume=_resume(), headless=headless,
-                        dry_run=dry_run)
+                        dry_run=dry_run, parallel=parallel)
         )
     except FileNotFoundError as exc:
         typer.echo(str(exc))
@@ -411,7 +429,10 @@ def run_daily(
     if config.settings().get("hn", {}).get("enabled", False):
         steps.append(("draft-outreach", lambda: draft_outreach_cmd(top=top)))
     if not skip_prefill:
-        steps.append(("prefill", lambda: prefill(top=top, job=[], headless=None)))
+        # Every option is passed: called directly, an omitted typer.Option default is an
+        # OptionInfo object, not its value. dry_run=True is what this step has always
+        # done in practice (that truthy OptionInfo), so run-daily never uploads a resume.
+        steps.append(("prefill", lambda: prefill(top=top, job=[], headless=None, dry_run=True, parallel=None)))
     for name, step in steps:
         typer.echo(f"\n=== {name} ===")
         step()

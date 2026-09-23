@@ -6,6 +6,7 @@ http:
   concurrency: 8
   timeout_seconds: 30
   cache_ttl_hours: 6
+  detail_cache_ttl_hours: 72  # per-posting detail pages (SmartRecruiters); they rarely change
 
 llm:
   provider: ollama            # ollama | openai_compatible
@@ -131,3 +132,4 @@ apply:
   daily_submission_cap: 100
   answer_match_threshold: 0.85   # cosine similarity for mapping a form question to the answer bank
   headless: true
+  prefill_concurrency: 3         # forms prefilled/dry-run at once, in separate tabs

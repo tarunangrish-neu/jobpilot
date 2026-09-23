@@ -378,3 +378,76 @@ def test_prefill_loads_several_jobs_at_one_company(apply_root):
         sess.commit()
     rows = _load(10, None)
     assert len(rows) == 2 and rows[0][1].name == rows[1][1].name == "Acme"
+
+
+def test_prefill_runs_forms_in_parallel_tabs_and_keeps_ranking_order(apply_root, fake_llm, monkeypatch):
+    """Several forms load at once (the slow part is the page, not the LLM); order is by score."""
+    import asyncio
+
+    from sqlmodel import select
+
+    from jobpilot import db
+    from jobpilot.apply import prefill as prefill_mod
+    from jobpilot.models import Application, Job, JobPosting
+
+    pdf = apply_root / "output" / "resume.pdf"
+    pdf.parent.mkdir(parents=True, exist_ok=True)
+    pdf.write_bytes(b"%PDF-1.4 test resume\n")
+    with db.session() as sess:
+        db.sync_companies(sess, [{"name": "Acme", "ats": "lever", "token": "acme"}])
+        for n in range(4):
+            db.upsert_posting(sess, JobPosting(source="lever", external_id=f"j{n}", company_name="Acme",
+                                               title="Backend Engineer", description_text="Payments."), 1)
+        for job in sess.exec(select(Job)).all():
+            job.status, job.final_score = "tailored", float(job.id)
+            sess.add(Application(job_id=job.id, resume_path=str(pdf)))
+        sess.commit()
+
+    in_flight = peak = 0
+    original = prefill_mod.prefill_one
+
+    async def counting(*args, **kwargs):
+        nonlocal in_flight, peak
+        in_flight += 1
+        peak = max(peak, in_flight)
+        await asyncio.sleep(0.2)  # hold the tab long enough for the others to start
+        try:
+            return await original(*args, **kwargs)
+        finally:
+            in_flight -= 1
+
+    monkeypatch.setattr(prefill_mod, "prefill_one", counting)
+    results = run(prefill_mod.run_prefill(
+        top=10, llm=fake_llm, resume=_resume(), headless=True, url_for=lambda j, c: SIMPLE_URL,
+        wait_for_human=False, parallel=2,
+    ))
+
+    assert peak == 2
+    assert [r.job_id for r in results] == [4, 3, 2, 1]  # best score first, as loaded
+    assert {r.status for r in results} == {"prefilled"}
+    with db.session() as sess:
+        assert {j.status for j in sess.exec(select(Job)).all()} == {"prefilled"}
+
+
+def test_browser_waits_for_the_profile_instead_of_colliding(apply_root):
+    """A submit approved mid-prefill must queue for the Chromium profile, not crash into it."""
+    import asyncio
+    import fcntl
+
+    from jobpilot.apply.browser import Browser, profile_dir
+
+    async def scenario() -> tuple[bool, bool]:
+        profile_dir().mkdir(parents=True, exist_ok=True)
+        other = open(profile_dir() / ".jobpilot.lock", "a")  # stands in for a running prefill
+        fcntl.flock(other, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        browser = Browser(headless=True)
+        waiting = asyncio.create_task(browser._acquire_profile())
+        await asyncio.sleep(0.3)
+        blocked = not waiting.done()
+        fcntl.flock(other, fcntl.LOCK_UN)
+        other.close()
+        await asyncio.wait_for(waiting, timeout=3)
+        browser._release_profile()
+        return blocked, waiting.done()
+
+    assert run(scenario()) == (True, True)
