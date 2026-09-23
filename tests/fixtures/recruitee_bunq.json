@@ -1,0 +1,312 @@
+{
+ "offers": [
+  {
+   "country": "Türkiye",
+   "sharing_title": "Support Experience Guide",
+   "position": 1604,
+   "category_code": "banking",
+   "title": "Support Experience Guide",
+   "close_at": null,
+   "mailbox_email": "job.ana7n@bunq.recruitee.com",
+   "max_hours": 40,
+   "state_name": "İstanbul",
+   "country_code": "TR",
+   "options_cv": "off",
+   "locations": [
+    {
+     "id": 39977,
+     "name": "Istanbul",
+     "state": "İstanbul",
+     "country": "Türkiye",
+     "city": "İstanbul",
+     "translations": {
+      "en": {
+       "name": "Istanbul",
+       "city": "İstanbul",
+       "postal_code": null,
+       "street": null,
+       "note": null
+      }
+     },
+     "country_code": "TR",
+     "state_code": "34",
+     "postal_code": null,
+     "street": null,
+     "note": null
+    },
+    {
+     "id": 39967,
+     "name": "Sofia",
+     "state": "Sofia (stolitsa)",
+     "country": "Bulgaria",
+     "city": "Sofia",
+     "translations": {
+      "en": {
+       "name": "Sofia",
+       "city": "Sofia",
+       "postal_code": null,
+       "street": null,
+       "note": null
+      }
+     },
+     "country_code": "BG",
+     "state_code": "22",
+     "postal_code": null,
+     "street": null,
+     "note": null
+    }
+   ],
+   "department": "Support & Operations",
+   "published_at": "2026-09-23 09:10:19 UTC",
+   "options_photo": "off",
+   "hybrid": true,
+   "experience_code": "entry_level",
+   "locations_question_type": "single_choice",
+   "postal_code": null,
+   "options_title": "off",
+   "careers_apply_url": "https://careers.bunq.com/o/support-experience-guide-3/c/new",
+   "salary": {
+    "max": null,
+    "min": null,
+    "period": null,
+    "currency": null
+   },
+   "options_phone": "required",
+   "requirements": "<ul><li><p>You’re curious by nature: you look for ways to improve how things work, not just how to get through the queue.</p></li><li><p>You’re calm under pressure, with a positive, solution-driven mindset when things get hectic.</p></li><li><p>You're comfortable being measured on KPIs and performance metrics.</p></li><li><p>You’re a teamplayer: steady, thoughtful, and proactive: the person others know they can count on.</p></li><li><p>You’re fully and perfectly comfortable speaking and writing in English.</p></li><li><p>You’re tech-savy and comfortable with new tools.</p></li><li><p>You see AI as an opportunity to actively look for ways to use it to work faster and better.</p></li><li><p>You’re available to cover morning, evening, and night shifts on weekdays, and on weekends.</p><p style=\"min-height: 1.7em;\"></p></li></ul><p><strong>Your space to perform</strong></p><p>🤟 Great, international colleagues who share your mindset<br>👩‍💻 Hybrid setup: after 3 months in-office, work 2 days remote, 3 days in-office weekly.<br>📚 We support growth with bunq Academy and €1500 annual learning budget<br>🇧🇬 Flex Benefits: €70 monthly budget via Re: benefit, offering access to 150+ perks tailored to your lifestyle.<br>🧳 Digital Nomad Program: After your first year, enjoy up to 20 days per year to work while traveling, combining flexibility with strong team collaboration<br>🚀 We reward tenure with a dedicated travel budget: €1.5k after 2 years and €3k after 4 years to visit another core office.<br>💻 A MacBook so you can Get Shit Done with us<br>🥦 Delicious lunches from our fabulous in-house chefs with vegan and vegetarian options<br>⚕️ Private health insurance, just in case<br>🍻 Friday drinks and other celebrations - bunq style</p><p style=\"min-height: 1.7em;\"></p><p><em>All new hires are subject to Pre-employment Screening (PES), which includes checks conducted by our third-party partner, Zinc. This is part of our commitment to a secure and trustworthy workplace.</em></p><p>Curious to see how we make life easy? - try the <em><a rel=\"noopener\" target=\"_blank\" href=\"https://app.adjust.com/1tyd4x67?fallback=https%3A%2F%2Fwww.bunq.com%2F&redirect_macos=https%3A%2F%2Fwww.bunq.com%2F\">bunq app</a></em>, it only takes 5 minutes to sign up.</p>",
+   "guid": "ana7n",
+   "created_at": "2026-09-23 08:29:55 UTC",
+   "description": "<p style=\"text-align:start;\">As a Support Experience Guide, you're the human expert who steps in when our AI agent Finn needs a helping hand. You don't just fix problems; you make our users feel heard and build trust that lasts. Every interaction isn't just a closed ticket, it's a lesson that makes Finn smarter for next time. Finn is smart, but you're the genius behind the curtain 🤖✨</p><p style=\"text-align:start;min-height: 1.7em;\"></p><h4 style=\"text-align:start;\"><strong>Take Ownership:</strong></h4><ul><li><p>Make sure every user feels supported, understood, and never left behind: you'll take over escalated conversations that Finn (our AI assistant) hands off to a human.</p></li><li><p>Get to the root cause of why users needed to reach out at all, and drive fixes that remove the underlying problem: not just close the ticket.</p></li><li><p>Make Finn smarter after every interaction: spot where it fell short, and feed that back so the next Eva gets a better answer.</p></li></ul>",
+   "location_question_visible": true,
+   "locations_question_required": true,
+   "sharing_description": "As a Support Experience Guide, you're the human expert who steps in when our AI agent Finn needs a helping hand. You don't just fix problems; you make our users feel heard and build trust that lasts. ",
+   "location": "İstanbul, İstanbul, Türkiye",
+   "options_salutation": "off",
+   "remote": false,
+   "min_hours": 40,
+   "company_name": "bunq",
+   "careers_url": "https://careers.bunq.com/o/support-experience-guide-3",
+   "id": 2755994,
+   "slug": "support-experience-guide-3",
+   "city": "İstanbul",
+   "highlight": null,
+   "education_code": "bachelor_degree",
+   "state_code": "34",
+   "employment_type_code": "fulltime_permanent",
+   "updated_at": "2026-09-23 09:11:18 UTC",
+   "on_site": false,
+   "status": "published",
+   "max_hours_per_week": "40",
+   "options_cover_letter": "off",
+   "tags": [],
+   "min_hours_per_week": "40"
+  },
+  {
+   "country": "Türkiye",
+   "sharing_title": "SOS Hotline Support Guide",
+   "position": 1602,
+   "category_code": "banking",
+   "title": "SOS Hotline Support Guide",
+   "close_at": null,
+   "mailbox_email": "job.udyvg@bunq.recruitee.com",
+   "max_hours": 40,
+   "state_name": "İstanbul",
+   "country_code": "TR",
+   "options_cv": "off",
+   "locations": [
+    {
+     "id": 39977,
+     "name": "Istanbul",
+     "state": "İstanbul",
+     "country": "Türkiye",
+     "city": "İstanbul",
+     "translations": {
+      "en": {
+       "name": "Istanbul",
+       "city": "İstanbul",
+       "postal_code": null,
+       "street": null,
+       "note": null
+      }
+     },
+     "country_code": "TR",
+     "state_code": "34",
+     "postal_code": null,
+     "street": null,
+     "note": null
+    },
+    {
+     "id": 39967,
+     "name": "Sofia",
+     "state": "Sofia (stolitsa)",
+     "country": "Bulgaria",
+     "city": "Sofia",
+     "translations": {
+      "en": {
+       "name": "Sofia",
+       "city": "Sofia",
+       "postal_code": null,
+       "street": null,
+       "note": null
+      }
+     },
+     "country_code": "BG",
+     "state_code": "22",
+     "postal_code": null,
+     "street": null,
+     "note": null
+    }
+   ],
+   "department": "Support & Operations",
+   "published_at": "2026-09-22 08:22:59 UTC",
+   "options_photo": "off",
+   "hybrid": true,
+   "experience_code": "entry_level",
+   "locations_question_type": "single_choice",
+   "postal_code": null,
+   "options_title": "off",
+   "careers_apply_url": "https://careers.bunq.com/o/sos-hotline-support-guide-1/c/new",
+   "salary": {
+    "max": null,
+    "min": null,
+    "period": null,
+    "currency": null
+   },
+   "options_phone": "required",
+   "requirements": "<p>• You maintain unwavering composure and empathy in high-pressure, sensitive situations, acting as a stable and reassuring presence for users in distress.<br>• You are a natural at turning friction into flow. You have a background in handling sensitive and urgent issues with a calm and structured approach.<br>• You are naturally curious and adept at digging deep to uncover the root cause of an issue, not just treating the symptoms.<br>• You have a close-to-native or native command of English. Your communication is clear, concise, and empathetic.<br>• You have prior experience in a high-pressure environment like a contact center, technical support, or an incident response team, preferably within fintech or financial services.<br>• You are ready to work on a 24/7 shift schedule, including weekends, nights, and holidays.</p><p style=\"min-height: 1.7em;\"></p><p><strong>Your space to perform</strong></p><p>🤟 Great, international colleagues who share your mindset<br>👩‍💻 Hybrid setup: after 3 months in-office, work 2 days remote, 3 days in-office weekly.<br>📚 We support growth with bunq Academy and €1500 annual learning budget<br>🇧🇬 Flex Benefits: €70 monthly budget via Re: benefit, offering access to 150+ perks tailored to your lifestyle.<br>🧳 Digital Nomad Program: After your first year, enjoy up to 20 days per year to work while traveling, combining flexibility with strong team collaboration<br>🚀 We reward tenure with a dedicated travel budget: €1.5k after 2 years and €3k after 4 years to visit another core office.<br>💻 A MacBook so you can Get Shit Done with us<br>🥦 Delicious lunches from our fabulous in-house chefs with vegan and vegetarian options<br>⚕️ Private health insurance, just in case<br>🍻 Friday drinks and other celebrations - bunq style</p><p><br><em>Curious to see how we make life easy? - try the <u><a rel=\"noopener\" target=\"_blank\" href=\"https://app.adjust.com/1tyd4x67?fallback=https%3A%2F%2Fwww.bunq.com%2F&redirect_macos=https%3A%2F%2Fwww.bunq.com%2F\">bunq app</a></u>, it only takes 5 minutes to sign up</em></p><p><em>All new hires are subject to Pre-employment Screening (PES), which includes checks conducted by our third-party partner, Zinc. This is part of our commitment to a secure and trustworthy workplace.</em></p>",
+   "guid": "udyvg",
+   "created_at": "2026-09-22 07:46:31 UTC",
+   "description": "<p>At bunq, we're not just building a bank; we're reshaping how people experience financial freedom. We believe that when our users face an urgent situation, they deserve immediate, reliable support that provides total peace of mind. As an SOS Hotline Support Guide, you’ll be the calm in the storm, embodying our philosophy by taking ownership, cutting through confusion, and restoring trust when it matters most.</p><p><br><strong>Take Ownership</strong><br>As an SOS Hotline Support Guide, you will play a critical role in managing our most urgent user interactions, ensuring their safety, security, and peace of mind. You won't just follow a script; you'll be a lifeline 🌟 </p><ul><li><p>Take immediate ownership of our 24/7 SOS Hotline, acting as the first point of contact and mastering crisis de-escalation to guide users from panic to a feeling of security.</p></li><li><p>Serve as the single source of truth by using strong analytical and investigative skills to troubleshoot complex problems, get to the root cause, and deliver swift, definitive resolutions.</p></li><li><p>Seamlessly connect urgent user needs with our internal processes, ensuring a reassuring and efficient experience without exposing the complexity behind the scenes.</p></li><li><p>Identify, analyze, and escalate systemic issues you encounter, acting as our first line of defense to protect our entire user base and prevent future problems.</p></li></ul>",
+   "location_question_visible": true,
+   "locations_question_required": true,
+   "sharing_description": "At bunq, we're not just building a bank; we're reshaping how people experience financial freedom. We believe that when our users face an urgent situation, they deserve immediate, reliable support that",
+   "location": "İstanbul, İstanbul, Türkiye",
+   "options_salutation": "off",
+   "remote": false,
+   "min_hours": 40,
+   "company_name": "bunq",
+   "careers_url": "https://careers.bunq.com/o/sos-hotline-support-guide-1",
+   "id": 2754503,
+   "slug": "sos-hotline-support-guide-1",
+   "city": "İstanbul",
+   "highlight": null,
+   "education_code": "bachelor_degree",
+   "state_code": "34",
+   "employment_type_code": "fulltime_permanent",
+   "updated_at": "2026-09-22 10:57:18 UTC",
+   "on_site": false,
+   "status": "published",
+   "max_hours_per_week": "40",
+   "options_cover_letter": "off",
+   "tags": [
+    "E2",
+    "Operations",
+    "Promise Keeper"
+   ],
+   "min_hours_per_week": "40"
+  },
+  {
+   "country": "Türkiye",
+   "sharing_title": "Fraud Operations Analyst - Night Shift",
+   "position": 1595,
+   "category_code": "banking",
+   "title": "Fraud Operations Analyst - Night Shift",
+   "close_at": null,
+   "mailbox_email": "job.2whnw@bunq.recruitee.com",
+   "max_hours": 40,
+   "state_name": "İstanbul",
+   "country_code": "TR",
+   "options_cv": "off",
+   "locations": [
+    {
+     "id": 39977,
+     "name": "Istanbul",
+     "state": "İstanbul",
+     "country": "Türkiye",
+     "city": "İstanbul",
+     "translations": {
+      "en": {
+       "name": "Istanbul",
+       "city": "İstanbul",
+       "postal_code": null,
+       "street": null,
+       "note": null
+      }
+     },
+     "country_code": "TR",
+     "state_code": "34",
+     "postal_code": null,
+     "street": null,
+     "note": null
+    },
+    {
+     "id": 39967,
+     "name": "Sofia",
+     "state": "Sofia (stolitsa)",
+     "country": "Bulgaria",
+     "city": "Sofia",
+     "translations": {
+      "en": {
+       "name": "Sofia",
+       "city": "Sofia",
+       "postal_code": null,
+       "street": null,
+       "note": null
+      }
+     },
+     "country_code": "BG",
+     "state_code": "22",
+     "postal_code": null,
+     "street": null,
+     "note": null
+    }
+   ],
+   "department": "Support & Operations",
+   "published_at": "2026-09-15 08:11:57 UTC",
+   "options_photo": "off",
+   "hybrid": true,
+   "experience_code": "entry_level",
+   "locations_question_type": "multiple_choice",
+   "postal_code": null,
+   "options_title": "off",
+   "careers_apply_url": "https://careers.bunq.com/o/fraud-operations-analyst-night-shift/c/new",
+   "salary": {
+    "max": null,
+    "min": null,
+    "period": null,
+    "currency": null
+   },
+   "options_phone": "required",
+   "requirements": "<ul><li><p>You have knowledge of fraud monitoring and prevention</p></li><li><p>You have a close eye for detail: you notice the subtle behavioral and contextual clues</p></li><li><p>You always think from the user’s perspective first, have empathy, and understand how to protect their interests</p></li><li><p>You're comfortable using AI tools to work faster and smarter, and you can spot when an AI-based tool is being used against us</p></li><li><p>We'd love it if you already have knowledge of KYC and PayOps</p></li><li><p>You're an excellent communicator and speak English fluently</p></li></ul><p style=\"min-height: 1.7em;\"></p><p><strong>Your space to perform</strong></p><p>🤟 Great, international colleagues who share your mindset<br>👩‍💻 Hybrid setup: after 3 months in-office, work 2 days remote, 3 days in-office weekly.<br>📚 We support growth with bunq Academy and €1500 annual learning budget<br>🇧🇬 Flex Benefits: €70 monthly budget via Re: benefit, offering access to 150+ perks tailored to your lifestyle.<br>🧳 Digital Nomad Program: After your first year, enjoy up to 20 days per year to work while traveling, combining flexibility with strong team collaboration<br>🚀 We reward tenure with a dedicated travel budget: €1.5k after 2 years and €3k after 4 years to visit another core office.<br>💻 A MacBook so you can Get Shit Done with us<br>🥦 Delicious lunches from our fabulous in-house chefs with vegan and vegetarian options<br>⚕️ Private health insurance, just in case<br>🍻 Friday drinks and other celebrations - bunq style</p><p style=\"min-height: 1.7em;\"></p><p>All new hires are subject to Pre-employment Screening (PES), which includes checks conducted by our third-party partner, Zinc. This is part of our commitment to a secure and trustworthy workplace.</p><p>Curious to see how we make life easy? — try the <a rel=\"noopener\" target=\"_blank\" href=\"https://app.adjust.com/1tyd4x67?fallback=https%3A%2F%2Fwww.bunq.com%2F&redirect_macos=https%3A%2F%2Fwww.bunq.com%2F\">bunq app</a>, it only takes 5 minutes to sign up.</p>",
+   "guid": "2whnw",
+   "created_at": "2026-09-15 08:08:27 UTC",
+   "description": "<p>We're on a mission to Make Life Easy, and nothing makes life harder than losing money to a fraudster. Fraud Ops is what keeps that promise real: fast, accurate decisions on our user’s money, every single day.</p><p>Our Fraud queues have changed. Automation now clears the obvious cases, so what lands on your desk are the hard ones: ambiguous profiles, mixed signals, calls with real financial and regulatory weight behind them. We're growing the team to keep pace with that shift, and we're looking for people who bring both speed and precision to the table.</p><p>Up for this?<br>Kick off your application by taking our assessment and find out if bunq is your perfect match! 🍭</p><p style=\"min-height: 1.7em;\"></p><p><strong>Take ownership</strong><br>As our Fraud Operations Analyst, you'll take on the cases automation can't settle on its own: reading the signals, protecting our user’s money, and helping our systems learn from every case you close.</p><ul><li><p>Become a detective in fraud prevention, using your in-depth investigation and problem-solving skills to protect our users from suspicious activity 🕵️‍♂️</p></li><li><p>Bring empathy and effective communication into every interaction to provide the best support possible</p></li><li><p>Investigate ambiguous fraud cases where the signals aren't clear-cut, weighing behavioral and contextual clues to tell a genuine user from a fraudster</p></li><li><p>Choose whether to act, ask, or escalate: fast, accurate calls that protect user’s money</p></li><li><p>Feed what you learn back into our fraud tooling, so automation catches more and fewer edge cases reach the queue over time</p></li></ul>",
+   "location_question_visible": true,
+   "locations_question_required": true,
+   "sharing_description": "We're on a mission to Make Life Easy, and nothing makes life harder than losing money to a fraudster. Fraud Ops is what keeps that promise real: fast, accurate decisions on our user’s money, every sin",
+   "location": "İstanbul, İstanbul, Türkiye",
+   "options_salutation": "off",
+   "remote": false,
+   "min_hours": 40,
+   "company_name": "bunq",
+   "careers_url": "https://careers.bunq.com/o/fraud-operations-analyst-night-shift",
+   "id": 2746079,
+   "slug": "fraud-operations-analyst-night-shift",
+   "city": "İstanbul",
+   "highlight": null,
+   "education_code": "bachelor_degree",
+   "state_code": "34",
+   "employment_type_code": "fulltime_fixed_term",
+   "updated_at": "2026-09-15 08:14:09 UTC",
+   "on_site": false,
+   "status": "published",
+   "max_hours_per_week": "40",
+   "options_cover_letter": "off",
+   "tags": [
+    "E2",
+    "Operations",
+    "Promise Keeper"
+   ],
+   "min_hours_per_week": "40"
+  }
+ ]
+}

@@ -73,11 +73,17 @@ def looks_remote(*values: Optional[str]) -> bool:
 
 
 def parse_iso(value: Optional[str]) -> Optional[datetime]:
-    """Parse an ISO-8601 timestamp to aware UTC. Tolerates a trailing Z."""
+    """Parse an ISO-8601 timestamp to aware UTC.
+
+    Tolerates a trailing Z and Recruitee's "2026-09-23 09:10:19 UTC".
+    """
     if not value:
         return None
+    text = str(value).strip().replace("Z", "+00:00")
+    if text.endswith(" UTC"):
+        text = text[:-4] + "+00:00"
     try:
-        dt = datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+        dt = datetime.fromisoformat(text)
     except ValueError:
         return None
     if dt.tzinfo is None:

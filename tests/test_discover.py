@@ -16,6 +16,9 @@ from jobpilot.sources.discover import candidates_from_html, guess_from_domain
         ('<a href="https://jobs.lever.co/palantir/">Careers</a>', ("lever", "palantir")),
         ('fetch("https://api.lever.co/v0/postings/matchgroup?mode=json")', ("lever", "matchgroup")),
         ('<a href="https://jobs.ashbyhq.com/ramp">Open roles</a>', ("ashby", "ramp")),
+        ('<a href="https://apply.workable.com/huggingface/">Jobs</a>', ("workable", "huggingface")),
+        ('<a href="https://jobs.smartrecruiters.com/ServiceNow/123">Apply</a>', ("smartrecruiters", "servicenow")),
+        ('<script src="https://bunq.recruitee.com/api/offers/"></script>', ("recruitee", "bunq")),
     ],
 )
 def test_candidates_from_markup(markup, expected):
@@ -49,3 +52,21 @@ def test_guess_from_domain(url, expected):
 def test_guess_from_domain_never_returns_a_generic_subdomain():
     for url in ("https://about.gitlab.com/jobs/", "https://careers.stripe.com"):
         assert not ({"about", "careers", "jobs", "www"} & set(guess_from_domain(url)))
+
+
+def test_workable_host_is_not_a_token():
+    found = candidates_from_html('<a href="https://apply.workable.com/j/F4C096B22E">Apply</a>')
+    assert ("workable", "apply") not in found
+    assert ("workable", "j") not in found
+
+
+def test_smartrecruiters_empty_board_does_not_verify():
+    import asyncio
+
+    from jobpilot.sources.discover import verify
+
+    class Client:
+        async def get_json(self, url):
+            return 200, {"offset": 0, "limit": 100, "totalFound": 0, "content": []}
+
+    assert asyncio.run(verify(Client(), "smartrecruiters", "nosuchco")) is None
