@@ -66,6 +66,8 @@ Without the UI: `uv run jobpilot run-daily --top 30` (never submits), then `uv r
 
 `make` is idempotent, so rerunning it every day is cheap. `make help` lists the individual
 targets (e.g. `make daily TOP=20`, `make tailor JOB=412`, `make test`).
+`make ui-start` runs the UI in the background (log in `logs/ui.log`), `make ui-restart`
+reloads it after a code change, `make ui-stop` stops it; `PORT=` picks another port.
 
 Or stage by stage:
 
