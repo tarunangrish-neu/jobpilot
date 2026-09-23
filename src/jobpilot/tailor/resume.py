@@ -52,6 +52,19 @@ def select_bullets(resume: MasterResume, plan: TailorPlan, max_bullets: int) -> 
     return chosen[:max_bullets], unknown
 
 
+def _keyword_stuffing(original: str, rephrase: str) -> str:
+    """A reason when a rephrase pads the bullet instead of restating it.
+
+    Seen from qwen2.5-7b: "...from 2 days to 3 hours (Kubernetes, Terraform)".
+    Nothing invented, but a tacked-on keyword list reads worse, not better.
+    """
+    if "(" in rephrase and "(" not in original:
+        return "added a parenthetical"
+    if len(rephrase) > len(original) * 1.3 + 20:
+        return "much longer than the original"
+    return ""
+
+
 def _contact_items(resume: MasterResume) -> list[str]:
     items = [resume.contact.email, resume.contact.phone, resume.contact.location]
     items += [
@@ -83,8 +96,11 @@ def build_document(
             texts[bid] = original
             continue
         finding = verify_rephrase(original, new, facts)
-        if finding:
-            report.rejected.append({"id": bid, "rephrase": new, "new_entities": finding.items()})
+        stuffing = _keyword_stuffing(original, new)
+        if finding or stuffing:
+            report.rejected.append(
+                {"id": bid, "rephrase": new, "new_entities": finding.items() + ([stuffing] if stuffing else [])}
+            )
             texts[bid] = original
         else:
             report.rephrased.append(bid)

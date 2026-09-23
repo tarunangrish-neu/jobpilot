@@ -132,6 +132,14 @@ def test_build_document_uses_only_master_content():
     assert report.unknown_skills == ["COBOL"]
 
 
+def test_keyword_stuffed_rephrase_falls_back_to_original():
+    # Real qwen2.5-7b output from the M3 acceptance run.
+    plan = TailorPlan(bullet_ids=["nw-k8s"], rephrasings={"nw-k8s": B["nw-k8s"].text + " (Kubernetes, Terraform)"})
+    doc, report = build_document(RESUME, plan, FACTS, ["nw-k8s"])
+    assert doc["experience"][1]["bullets"] == [B["nw-k8s"].text]
+    assert report.rejected[0]["new_entities"] == ["added a parenthetical"]
+
+
 def test_cover_letter_sentences_are_filtered():
     draft = CoverLetterDraft(
         paragraphs=[
