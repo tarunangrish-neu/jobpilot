@@ -802,3 +802,83 @@ companies:
   - name: Zapier
     ats: ashby
     token: zapier
+
+  # === Large employers (added 2026-09-23; verified live) ======================
+  # Searched by keyword (settings.yaml large_boards), details fetched only for roles
+  # that pass your title/location rules. No form filler: tailored, then applied to by hand.
+  # --- Workday (token: <tenant>.<wdN>/<site> from <tenant>.<wdN>.myworkdayjobs.com/<site>)
+  - name: Accenture
+    ats: workday
+    token: accenture.wd103/AccentureCareers
+  - name: Adobe
+    ats: workday
+    token: adobe.wd5/external_experienced
+  - name: Bank of America
+    ats: workday
+    token: ghr.wd1/Lateral-US
+  - name: BlackRock
+    ats: workday
+    token: blackrock.wd1/BlackRock_Professional
+  - name: CME Group
+    ats: workday
+    token: cmegroup.wd1/cme_careers
+  - name: Capital One
+    ats: workday
+    token: capitalone.wd12/Capital_One
+  - name: Cisco
+    ats: workday
+    token: cisco.wd5/Cisco_Careers
+  - name: Citi
+    ats: workday
+    token: citi.wd5/2
+  - name: Fidelity Investments
+    ats: workday
+    token: fmr.wd1/FidelityCareers
+  - name: Intel
+    ats: workday
+    token: intel.wd1/External
+  - name: Mastercard
+    ats: workday
+    token: mastercard.wd1/CorporateCareers
+  - name: Morgan Stanley
+    ats: workday
+    token: ms.wd5/External
+  - name: NVIDIA
+    ats: workday
+    token: nvidia.wd5/NVIDIAExternalCareerSite
+  - name: Nasdaq
+    ats: workday
+    token: nasdaq.wd1/Global_External_Site
+  - name: PayPal
+    ats: workday
+    token: paypal.wd1/jobs
+  - name: Salesforce
+    ats: workday
+    token: salesforce.wd12/External_Career_Site
+  - name: State Street
+    ats: workday
+    token: statestreet.wd1/Global
+  - name: T. Rowe Price
+    ats: workday
+    token: troweprice.wd5/TRowePrice
+  - name: Vanguard
+    ats: workday
+    token: vanguard.wd5/vanguard_external
+  - name: Workday
+    ats: workday
+    token: workday.wd5/Workday
+  # --- Amazon (amazon.jobs; token: amazon)
+  - name: Amazon
+    ats: amazon
+    token: amazon
+  # --- Eightfold (token: <careers host>/<company domain>)
+  - name: Microsoft
+    ats: eightfold
+    token: apply.careers.microsoft.com/microsoft.com
+  - name: Qualcomm
+    ats: eightfold
+    token: careers.qualcomm.com/qualcomm.com
+  # --- Oracle Recruiting Cloud (token: <host prefix>/<site number> from <prefix>.oraclecloud.com)
+  - name: JPMorgan Chase
+    ats: oracle
+    token: jpmc.fa/CX_1001

@@ -138,6 +138,13 @@ discovery:
     - 'site:jobs.ashbyhq.com ("ML infrastructure" OR "AI infrastructure" OR "inference")'
     - 'site:job-boards.greenhouse.io "distributed systems" engineer remote US'
 
+large_boards:
+  # Workday / Amazon / Eightfold / Oracle career sites list thousands of roles, so they are
+  # searched by keyword instead of paged in full. Each term is one search per company.
+  search_terms: ["software engineer", "backend engineer", "platform engineer", "infrastructure engineer", "distributed systems"]
+  max_per_term: 200      # listings read per term per company
+  max_details: 150       # description fetches per company (after title/location rules)
+
 tailor:
   max_bullets: 12              # upper bound; bullets are trimmed further until the PDF is one page
   # auto: write a cover letter only when the application form has a cover-letter field

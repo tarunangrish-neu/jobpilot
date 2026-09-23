@@ -104,7 +104,15 @@ These were verified against live responses and each one silently corrupts data i
   adapter fetches details only for postings that pass `check_title`/`check_location`.
 - **Recruitee** tokens are subdomains. Text is split across `description` and `requirements`
   (both kept — visa language lives in either). `published_at` is `"YYYY-MM-DD HH:MM:SS UTC"`.
-- Workable, SmartRecruiters, and Recruitee have **no form filler** (`apply.FILLERS`), so their
+- **Large employers** (`sources/workday.py`, `amazon.py`, `eightfold.py`, `oracle.py`, shared
+  logic in `sources/large.py`) are searched by keyword (`large_boards.search_terms`), never paged
+  in full; details are fetched only for listings that already pass `check_title`/`check_location`,
+  capped by `large_boards.max_details`. Tokens pack several parts: Workday `<tenant>.<wdN>/<site>`,
+  Eightfold `<host>/<domain>`, Oracle `<host prefix>/<site number>`, Amazon `amazon`. Workday
+  `locationsText` is often "3 Locations" (real list only in the detail); `postedOn` is relative,
+  so `startDate` is used. Verify goes through each adapter's own `verify()` (Workday is a POST).
+  Goldman Sachs (robots `Disallow: /`) and Meta (scraping terms) are deliberately not supported.
+- Workable, SmartRecruiters, Recruitee, and the large-employer sites have **no form filler** (`apply.FILLERS`), so their
   jobs never reach `prefilled` and cannot be submitted by the app; the UI offers "I applied
   manually" instead.
 
