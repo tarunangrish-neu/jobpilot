@@ -1,0 +1,86 @@
+<!doctype html>
+<!-- A local stand-in for an ATS application form. It mixes the layouts seen on
+     the live Greenhouse, Lever, and Ashby pages: ✱ required markers, styled
+     radios whose real inputs are hidden, a react-select-like combobox, and an
+     "Autofill from resume" decoy upload. Submitting shows a thank-you page and
+     sets window.__submitted, so tests can prove prefill never submits. -->
+<html>
+<head>
+<meta charset="utf-8">
+<title>Apply - Acme</title>
+<style>
+  .field { margin: 12px 0; }
+  .styled-radio input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+  .styled-radio label { border: 1px solid #999; padding: 4px 10px; cursor: pointer; }
+  #country-options { border: 1px solid #ccc; display: none; }
+  #country-options.open { display: block; }
+</style>
+</head>
+<body>
+<h1>Backend Engineer</h1>
+<form id="application" onsubmit="event.preventDefault(); submitIt();">
+  <div class="field"><label>Autofill from resume</label><input type="file" name="autofill"></div>
+  <div class="field"><label for="resume">Resume/CV ✱</label><input id="resume" type="file" name="resume" required></div>
+  <div class="field"><label for="name">Full name ✱</label><input id="name" name="name" required></div>
+  <div class="field"><label for="email">Email ✱</label><input id="email" name="email" type="email" required></div>
+  <div class="field"><label for="phone">Phone</label><input id="phone" name="phone" type="tel"></div>
+  <div class="field"><label for="li">LinkedIn URL</label><input id="li" name="urls[LinkedIn]"></div>
+
+  <div class="field styled-radio">
+    <div class="application-label">Are you legally authorized to work in the country for which you are applying? ✱</div>
+    <input type="radio" id="auth-y" name="auth" value="Yes" required><label for="auth-y">Yes</label>
+    <input type="radio" id="auth-n" name="auth" value="No"><label for="auth-n">No</label>
+  </div>
+  <div class="field styled-radio">
+    <div class="application-label">Will you now or in the future require sponsorship for employment visa status (e.g., H-1B, etc.)? ✱</div>
+    <input type="radio" id="sp-y" name="sponsor" value="Yes" required><label for="sp-y">Yes</label>
+    <input type="radio" id="sp-n" name="sponsor" value="No"><label for="sp-n">No</label>
+  </div>
+
+  <div class="field">
+    <label id="country-label">Where do you plan on working from?</label>
+    <input id="country" role="combobox" aria-labelledby="country-label" autocomplete="off">
+    <div id="country-options">
+      <div role="option">Canada</div><div role="option">United States</div><div role="option">Mexico</div>
+    </div>
+  </div>
+
+  <div class="field"><label for="why">Why do you want to work at Acme?</label><textarea id="why" name="why"></textarea></div>
+
+  <!-- Ashby: each checkbox is named after its option; one fieldset per question. -->
+  <fieldset class="_fieldEntry_x">
+    <label class="ashby-label">Are you open to relocation to NYC or SF?</label>
+    <label><input type="checkbox" name="Can move to NYC"> Can move to NYC</label>
+    <label><input type="checkbox" name="Only open to remote"> Only open to remote</label>
+  </fieldset>
+  <!-- Ashby: a lone checkbox that IS the (sensitive) question. -->
+  <div class="field" id="lone"><label><input type="checkbox" name="question_1"> Are you authorized to work in the U.S. without company sponsorship?</label></div>
+  <script>if (location.search.includes('simple')) document.getElementById('lone').remove();</script>
+
+  <div class="field">
+    <label for="vet">Veteran status</label>
+    <select id="vet" name="vet">
+      <option value="">Select ...</option>
+      <option>I am a protected veteran</option>
+      <option>I am not a protected veteran</option>
+      <option>I decline to self-identify for protected veteran status</option>
+    </select>
+  </div>
+
+  <button type="submit" id="btn-submit">Submit application</button>
+</form>
+<script>
+  const box = document.getElementById('country');
+  const list = document.getElementById('country-options');
+  box.addEventListener('click', () => list.classList.add('open'));
+  for (const opt of list.querySelectorAll('[role=option]')) {
+    opt.addEventListener('click', () => { box.value = opt.innerText; list.classList.remove('open'); });
+  }
+  window.__submitted = false;
+  function submitIt() {
+    window.__submitted = true;
+    document.body.innerHTML = '<h1>Thank you for applying!</h1><p>Your application has been received.</p>';
+  }
+</script>
+</body>
+</html>

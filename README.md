@@ -12,12 +12,12 @@ review queue.
 | Milestone | Scope | State |
 |---|---|---|
 | M1 | Sourcing (Greenhouse / Lever / Ashby) + SQLite | ✅ done |
-| M2 | Filters, visa screen, LCA import, embedding + LLM rerank | not started |
-| M3 | Resume tailoring, anti-fabrication check, Typst rendering | not started |
-| M4 | Streamlit review UI (read-only) | not started |
-| M5 | Playwright prefill, stop-before-submit | not started |
-| M6 | Approve & submit, daily cap, stats | not started |
-| M7 | HN "Who's Hiring" + manual-apply drafts | not started |
+| M2 | Filters, visa screen, LCA import, embedding + LLM rerank | ✅ done |
+| M3 | Resume tailoring, anti-fabrication check, Typst rendering | ✅ done |
+| M4 | Streamlit review UI | ✅ done |
+| M5 | Playwright prefill, stop-before-submit | ✅ built; live acceptance needs your `answers.yaml` (see below) |
+| M6 | Approve & submit, daily cap, stats | ✅ built; tested on a local form only |
+| M7 | HN "Who's Hiring" + manual-apply drafts | ✅ done (opt-in: `hn.enabled`) |
 
 ## Setup
 
@@ -35,21 +35,72 @@ uv run jobpilot init            # create the DB and config/answers.yaml
 
 Then fill in:
 
+- `data/master_resume.yaml` — **every** resume fact, as bullets with ids. `init` copies a
+  fictional example ("Alex Example"); replace it all. Tailoring can only select, reorder, and
+  rephrase what is here. **Gitignored.**
 - `config/answers.yaml` — personal details and work-authorization answers. **Gitignored.**
   These are used verbatim; the LLM never generates work-authorization, sponsorship, EEO, or
-  salary answers.
+  salary answers. Anything left empty is never guessed: the application becomes `needs_human`.
+  Add recurring questions to `common_questions` (`a: null` = LLM drafts it for review).
 - `config/companies.yaml` — the boards to watch. Ships with eight working placeholders.
 - `config/settings.yaml` — models, thresholds, filter keywords, rate limits, daily cap.
 
 ## Daily usage
 
 ```bash
-uv run jobpilot fetch                              # pull from every active board
-uv run jobpilot discover-token https://x.com/careers   # find a board token to add
-uv run jobpilot mark 412 interviewing              # update a job's status by hand
+uv run jobpilot run-daily --top 30   # fetch -> filter -> score -> tailor -> prefill; never submits
+uv run jobpilot ui                   # review, edit, approve & submit one at a time
+```
+
+The `Makefile` wraps all of these (`make` lists targets; e.g. `make setup`, `make daily TOP=20`,
+`make tailor JOB=412`, `make ui`, `make test`).
+
+Or stage by stage:
+
+```bash
+uv run jobpilot fetch [--hn]         # pull every active board (and HN if enabled)
+uv run jobpilot filter               # dedupe, title/location/age rules, visa screen
+uv run jobpilot score                # embed + LLM rerank; prints the ranked table
+uv run jobpilot tailor --top 30      # one-page resume PDFs (+ --cover-letter)
+uv run jobpilot prefill --top 30     # fill forms in Chromium, screenshot, STOP
+uv run jobpilot draft-outreach       # HN / manual-apply messages
+uv run jobpilot import-lca FY2025_Q4.csv   # DOL LCA disclosure data (CSV export of the xlsx)
+uv run jobpilot discover-token https://x.com/careers
+uv run jobpilot mark 412 interviewing      # rejected / interviewing / offer, by hand
 ```
 
 `fetch` is idempotent — re-running refreshes existing rows rather than duplicating them.
+Every stage only picks up jobs the previous stage finished, so re-running any of them is safe.
+
+### How submission works
+
+`prefill` never submits. In `jobpilot ui`, a job's **Approve & Submit** button is disabled
+until you tick "I have reviewed…", and it acts on that one job only: it records the approval
+(`events.type = approved`, `source = review_ui`) and starts a browser that refills the form
+from the reviewed answers, re-verifies every field, clicks submit, and screenshots the
+confirmation page. The submitter refuses anything without a UI approval in the audit log, any
+job already submitted, and anything past `apply.daily_submission_cap` (UTC day). A CAPTCHA,
+validation error, or changed form leaves the browser open and marks the job `needs_human`.
+
+### What tailoring will and won't do
+
+`tailor/verify.py` rejects any rephrased bullet that adds a number, technology, or proper noun
+not in the original bullet (or pads it with a keyword list); the original is used instead.
+Cover letters, drafted answers, and outreach messages are checked sentence by sentence; a
+sentence that states a new fact, or describes you in the job posting's words rather than your
+resume's, is dropped. With `qwen2.5:7b` most cover letters don't survive that and none is
+produced — by design. Rejections are shown in the UI and stored in `applications.tailoring_json`.
+
+### Not yet done
+
+- **M5 live acceptance** ("prefill 3 real postings per ATS") has not been run. Prefill was
+  tested headless against a local form and dry-run (extract + plan, nothing typed or
+  uploaded) against real Greenhouse, Lever, and Ashby forms. Greenhouse and Ashby upload
+  attachments the moment a file is chosen, so a real prefill sends your resume to the company.
+  Run it yourself once `answers.yaml` and `master_resume.yaml` are real:
+  `uv run jobpilot prefill --job <id>`.
+- **LCA import reads CSV only.** Reading the DOL `.xlsx` directly needs `openpyxl`, which is
+  outside the spec's stack. Export the sheet to CSV.
 
 ## Adding a company
 

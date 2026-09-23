@@ -24,6 +24,7 @@ JOB_STATUSES = (
     "skipped",
     "rejected",
     "interviewing",
+    "offer",  # response tracking (spec 6.6), set by hand with `jobpilot mark`
 )
 
 VISA_FLAGS = ("ok", "unclear", "blocked")
@@ -116,6 +117,12 @@ class Job(SQLModel, table=True):
     embed_score: Optional[float] = None
     llm_score: Optional[float] = None
     llm_reason: str = ""
+    # Set when a job clears the filter stage; `score` only considers these.
+    filtered_at: Optional[datetime] = None
+    visa_reason: str = ""
+    final_score: Optional[float] = Field(default=None, index=True)
+    # Full rerank payload: {"reasons": [...], "missing_skills": [...], "seniority_fit": ...}
+    llm_details_json: str = "{}"
 
     __table_args__ = (
         UniqueConstraint("source", "external_id", name="uq_job_source_external"),
@@ -136,6 +143,12 @@ class Application(SQLModel, table=True):
     submitted_at: Optional[datetime] = None
     error: str = ""
     screenshot_path: str = ""
+    # Tailoring audit: plan, bullets used, rejected rephrasings, dropped letter sentences.
+    tailoring_json: str = "{}"
+    cover_letter_text: str = ""
+    confirmation_screenshot_path: str = ""
+    # Manual-apply jobs (HN): drafted email/message for the human to send.
+    outreach_draft: str = ""
 
 
 class Event(SQLModel, table=True):
@@ -145,4 +158,29 @@ class Event(SQLModel, table=True):
     job_id: Optional[int] = Field(default=None, foreign_key="jobs.id", index=True)
     type: str = Field(index=True)
     payload_json: str = "{}"
+    created_at: datetime = Field(default_factory=utcnow)
+
+
+# --- Caches ----------------------------------------------------------------
+
+
+class Embedding(SQLModel, table=True):
+    """Embedding vectors keyed by sha256(model + text), so re-scoring is cheap."""
+
+    __tablename__ = "embeddings"
+
+    key: str = Field(primary_key=True)
+    model: str
+    vector_json: str
+    created_at: datetime = Field(default_factory=utcnow)
+
+
+class LLMCache(SQLModel, table=True):
+    """LLM responses keyed by a hash of provider, model, prompt version, and input."""
+
+    __tablename__ = "llm_cache"
+
+    key: str = Field(primary_key=True)
+    prompt: str = Field(index=True)
+    response: str
     created_at: datetime = Field(default_factory=utcnow)

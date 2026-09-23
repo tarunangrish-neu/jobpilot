@@ -9,6 +9,7 @@ from sqlmodel import Session, SQLModel, create_engine, select
 
 from . import config
 from .models import Application, Company, Event, Job, JobPosting, utcnow  # noqa: F401
+from .models import Embedding, LLMCache  # noqa: F401 - registers the cache tables
 
 _engine = None
 
@@ -42,8 +43,44 @@ def reset_engine() -> None:
 
 
 def init_db() -> None:
-    """Create all four tables. Idempotent."""
-    SQLModel.metadata.create_all(get_engine())
+    """Create all tables and add any columns introduced since the DB was made. Idempotent."""
+    engine = get_engine()
+    SQLModel.metadata.create_all(engine)
+    _add_missing_columns(engine)
+
+
+def _sql_default(column) -> str:
+    default = column.default.arg if column.default is not None else None
+    if callable(default) or default is None:
+        return ""
+    if isinstance(default, bool):
+        return f" DEFAULT {int(default)}"
+    if isinstance(default, (int, float)):
+        return f" DEFAULT {default}"
+    return " DEFAULT '" + str(default).replace("'", "''") + "'"
+
+
+def _add_missing_columns(engine) -> None:
+    """Minimal forward-only migration: ALTER TABLE ADD COLUMN for new model fields.
+
+    `create_all` never touches existing tables, so a database created by an
+    earlier milestone would otherwise lack the columns later stages write.
+    String columns get their Python default as a SQL default so old rows
+    don't load NULL into a `str` field.
+    """
+    with engine.begin() as conn:
+        for table in SQLModel.metadata.sorted_tables:
+            have = {
+                row[1] for row in conn.exec_driver_sql(f"PRAGMA table_info('{table.name}')")
+            }
+            for column in table.columns:
+                if column.name in have:
+                    continue
+                ddl = column.type.compile(dialect=engine.dialect)
+                conn.exec_driver_sql(
+                    f'ALTER TABLE "{table.name}" ADD COLUMN "{column.name}" {ddl}'
+                    + _sql_default(column)
+                )
 
 
 def session() -> Session:

@@ -30,3 +30,51 @@ def temp_root(tmp_path, monkeypatch):
     yield tmp_path
     config.settings.cache_clear()
     db.reset_engine()
+
+
+class FakeBackend:
+    """Stands in for Ollama. `reply(messages) -> str` decides each chat answer.
+
+    Embeddings are a deterministic bag-of-words hash, so texts sharing words
+    are closer -- enough to test ranking without a model.
+    """
+
+    name = "fake"
+    text_model = "fake-text"
+    embed_model = "fake-embed"
+    DIM = 4096  # wide enough that a whole resume doesn't collide into every bucket
+
+    def __init__(self, reply=None):
+        self.reply = reply or (lambda messages: "{}")
+        self.chat_calls: list[list[dict]] = []
+        self.embed_calls = 0
+
+    async def chat(self, messages, schema):
+        self.chat_calls.append(messages)
+        return self.reply(messages)
+
+    async def embed(self, texts):
+        import hashlib
+        import re
+
+        self.embed_calls += 1
+        out = []
+        for text in texts:
+            vec = [0.0] * self.DIM
+            for word in re.findall(r"[a-z]+", text.lower()):
+                vec[int(hashlib.md5(word.encode()).hexdigest(), 16) % self.DIM] += 1.0
+            out.append(vec)
+        return out
+
+
+@pytest.fixture
+def fake_llm(temp_root):
+    """An LLMClient over FakeBackend with its cache in the temp DB."""
+    from jobpilot import db
+    from jobpilot.llm import LLMClient
+
+    db.init_db()
+    backend = FakeBackend()
+    client = LLMClient(backend=backend, cfg={"max_retries": 1, "log_path": "logs/llm.jsonl"})
+    client.fake = backend
+    return client
