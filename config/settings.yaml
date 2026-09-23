@@ -120,6 +120,24 @@ hn:
   max_comments: 80
   keywords: [backend, infrastructure, platform, rust, payments, distributed, founding engineer, ml infra, ai infra]
 
+discovery:
+  # Find new company boards with web-search queries; verified boards are appended to
+  # companies.yaml, then fetched from their official ATS APIs. Uses a search API (Google's
+  # result pages are never scraped). Free tiers: brave (BRAVE_API_KEY, ~2k queries/mo),
+  # google_cse (GOOGLE_CSE_KEY + GOOGLE_CSE_CX, ~100/day), serpapi (SERPAPI_API_KEY, ~100/mo;
+  # serpapi_engine: google_jobs searches Google Jobs listings). Keys go in .env.
+  enabled: false              # true = run the queries at the start of every `fetch`
+  provider: brave             # brave | google_cse | serpapi
+  serpapi_engine: google      # google | google_jobs (serpapi only)
+  max_results_per_query: 40
+  min_open_roles: 1
+  queries:
+    - 'site:jobs.ashbyhq.com "backend engineer" (payments OR stablecoin OR fintech)'
+    - 'site:boards.greenhouse.io "software engineer" (infrastructure OR platform) "New York"'
+    - 'site:jobs.lever.co "backend" (crypto OR blockchain OR payments)'
+    - 'site:jobs.ashbyhq.com ("ML infrastructure" OR "AI infrastructure" OR "inference")'
+    - 'site:job-boards.greenhouse.io "distributed systems" engineer remote US'
+
 tailor:
   max_bullets: 12              # upper bound; bullets are trimmed further until the PDF is one page
   # auto: write a cover letter only when the application form has a cover-letter field

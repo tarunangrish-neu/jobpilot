@@ -219,3 +219,586 @@ companies:
   - name: Hugging Face
     ats: workable
     token: huggingface
+
+  # --- payments / stablecoin infra (added 2026-09-23; each board verified live) ---------------------------------
+  - name: Alloy
+    ats: greenhouse
+    token: alloy
+  - name: BVNK
+    ats: greenhouse
+    token: bvnk
+  - name: BitGo
+    ats: greenhouse
+    token: bitgo
+  - name: Block
+    ats: greenhouse
+    token: block
+  - name: Checkbook
+    ats: greenhouse
+    token: checkbook
+  - name: Codat
+    ats: ashby
+    token: codat
+  - name: Finix
+    ats: lever
+    token: finix
+  - name: Gusto
+    ats: greenhouse
+    token: gusto
+  - name: Highnote
+    ats: greenhouse
+    token: highnote
+  - name: Justworks
+    ats: greenhouse
+    token: justworks
+  - name: Melio
+    ats: greenhouse
+    token: melio
+  - name: Merge
+    ats: ashby
+    token: merge
+  - name: Mesh
+    ats: greenhouse
+    token: mesh
+  - name: Method Financial
+    ats: ashby
+    token: method
+  - name: Middesk
+    ats: ashby
+    token: middesk
+  - name: Monzo
+    ats: greenhouse
+    token: monzo
+  - name: MoonPay
+    ats: lever
+    token: moonpay
+  - name: Novo
+    ats: ashby
+    token: novo
+  - name: Orb
+    ats: ashby
+    token: orb
+  - name: Orum
+    ats: ashby
+    token: orum
+  - name: Paddle
+    ats: ashby
+    token: paddle
+  - name: Payoneer
+    ats: greenhouse
+    token: payoneer
+  - name: Persona
+    ats: ashby
+    token: persona
+  - name: Primer
+    ats: ashby
+    token: primer
+  - name: Relay (logistics)
+    ats: ashby
+    token: relay
+  - name: Ripple
+    ats: greenhouse
+    token: ripple
+  - name: Rutter
+    ats: ashby
+    token: rutter
+  - name: Sardine
+    ats: ashby
+    token: sardine
+  - name: Socure
+    ats: ashby
+    token: socure
+  - name: Spade
+    ats: ashby
+    token: spade
+  - name: Stigg
+    ats: ashby
+    token: stigg
+  - name: Toast
+    ats: greenhouse
+    token: toast
+  - name: Wealthsimple
+    ats: ashby
+    token: wealthsimple
+  - name: Zuora
+    ats: greenhouse
+    token: zuora
+
+  # --- fintech / investing (added 2026-09-23; each board verified live) -----------------------------------------
+  - name: Acorns
+    ats: ashby
+    token: acorns
+  - name: Alpaca
+    ats: greenhouse
+    token: alpaca
+  - name: AngelList
+    ats: lever
+    token: angellist
+  - name: Betterment
+    ats: greenhouse
+    token: betterment
+  - name: Blend
+    ats: greenhouse
+    token: blend
+  - name: Branch
+    ats: greenhouse
+    token: branch
+  - name: Dave
+    ats: ashby
+    token: dave
+  - name: DriveWealth
+    ats: greenhouse
+    token: drivewealth
+  - name: Earnin
+    ats: greenhouse
+    token: earnin
+  - name: Figure Lending
+    ats: greenhouse
+    token: figure
+  - name: Found
+    ats: ashby
+    token: found
+  - name: Imprint
+    ats: ashby
+    token: imprint
+  - name: Kalshi
+    ats: ashby
+    token: kalshi
+  - name: Nova Credit
+    ats: greenhouse
+    token: novacredit
+  - name: Polymarket
+    ats: ashby
+    token: polymarket
+  - name: Public
+    ats: greenhouse
+    token: public
+  - name: Tala
+    ats: lever
+    token: tala
+  - name: Titan
+    ats: ashby
+    token: titan
+  - name: Upstart
+    ats: greenhouse
+    token: upstart
+  - name: Wealthfront
+    ats: lever
+    token: wealthfront
+
+  # --- crypto infra (added 2026-09-23; each board verified live) ------------------------------------------------
+  - name: Aptos Labs
+    ats: greenhouse
+    token: aptoslabs
+  - name: Ava Labs
+    ats: ashby
+    token: ava-labs
+  - name: Blockdaemon
+    ats: ashby
+    token: blockdaemon
+  - name: Consensys
+    ats: greenhouse
+    token: consensys
+  - name: Dune
+    ats: ashby
+    token: dune
+  - name: Eigen Labs
+    ats: ashby
+    token: eigen-labs
+  - name: Elliptic
+    ats: ashby
+    token: elliptic
+  - name: Espresso Systems
+    ats: ashby
+    token: espresso
+  - name: Gauntlet
+    ats: lever
+    token: gauntlet
+  - name: Helius
+    ats: ashby
+    token: helius
+  - name: Jump Trading
+    ats: greenhouse
+    token: jumptrading
+  - name: LayerZero Labs
+    ats: greenhouse
+    token: layerzerolabs
+  - name: Ledger
+    ats: ashby
+    token: ledger
+  - name: Matter Labs
+    ats: ashby
+    token: matter-labs
+  - name: Mysten Labs
+    ats: ashby
+    token: mystenlabs
+  - name: Nansen
+    ats: greenhouse
+    token: nansen
+  - name: OP Labs
+    ats: ashby
+    token: oplabs
+  - name: Offchain Labs
+    ats: lever
+    token: offchainlabs
+  - name: OpenSea
+    ats: ashby
+    token: opensea
+  - name: Paradigm
+    ats: ashby
+    token: paradigm
+  - name: Phantom
+    ats: ashby
+    token: phantom
+  - name: QuickNode
+    ats: ashby
+    token: quicknode
+  - name: Stellar Development Foundation
+    ats: ashby
+    token: stellar
+  - name: Succinct
+    ats: ashby
+    token: succinct
+  - name: TRM Labs
+    ats: ashby
+    token: trm-labs
+  - name: Tenderly
+    ats: ashby
+    token: tenderly
+  - name: Turnkey
+    ats: ashby
+    token: turnkey
+  - name: Uniswap Labs
+    ats: ashby
+    token: uniswap
+
+  # --- AI infra / agents (added 2026-09-23; each board verified live) -------------------------------------------
+  - name: Abridge
+    ats: ashby
+    token: abridge
+  - name: Arize AI
+    ats: greenhouse
+    token: arizeai
+  - name: AssemblyAI
+    ats: greenhouse
+    token: assemblyai
+  - name: Black Forest Labs
+    ats: ashby
+    token: black-forest-labs
+  - name: Bland AI
+    ats: ashby
+    token: bland
+  - name: Braintrust
+    ats: ashby
+    token: braintrust
+  - name: Browserbase
+    ats: ashby
+    token: browserbase
+  - name: Cartesia
+    ats: ashby
+    token: cartesia
+  - name: Cerebras
+    ats: ashby
+    token: cerebras
+  - name: Character
+    ats: ashby
+    token: character
+  - name: Cognition
+    ats: ashby
+    token: cognition
+  - name: CoreWeave
+    ats: greenhouse
+    token: coreweave
+  - name: Crusoe
+    ats: ashby
+    token: crusoe
+  - name: Decagon
+    ats: ashby
+    token: decagon
+  - name: Deepgram
+    ats: ashby
+    token: deepgram
+  - name: E2B
+    ats: ashby
+    token: e2b
+  - name: ElevenLabs
+    ats: ashby
+    token: elevenlabs
+  - name: Etched
+    ats: ashby
+    token: etched
+  - name: Figure AI
+    ats: greenhouse
+    token: figureai
+  - name: Harvey
+    ats: ashby
+    token: harvey
+  - name: Ideogram
+    ats: ashby
+    token: ideogram
+  - name: Imbue
+    ats: greenhouse
+    token: imbue
+  - name: Invisible Technologies
+    ats: greenhouse
+    token: invisible
+  - name: Labelbox
+    ats: greenhouse
+    token: labelbox
+  - name: Lambda
+    ats: ashby
+    token: lambda
+  - name: LanceDB
+    ats: ashby
+    token: lancedb
+  - name: Lightmatter
+    ats: greenhouse
+    token: lightmatter
+  - name: LlamaIndex
+    ats: ashby
+    token: llamaindex
+  - name: Luma AI
+    ats: ashby
+    token: lumaai
+  - name: Mercor
+    ats: ashby
+    token: mercor
+  - name: Nomic
+    ats: ashby
+    token: nomic
+  - name: Ollama
+    ats: ashby
+    token: ollama
+  - name: Periodic Labs
+    ats: ashby
+    token: periodic-labs
+  - name: Perplexity
+    ats: ashby
+    token: perplexity
+  - name: Physical Intelligence
+    ats: ashby
+    token: physicalintelligence
+  - name: Pika
+    ats: ashby
+    token: pika
+  - name: Poolside
+    ats: ashby
+    token: poolside
+  - name: Reflection AI
+    ats: ashby
+    token: reflectionai
+  - name: Reka
+    ats: ashby
+    token: reka
+  - name: Retell AI
+    ats: ashby
+    token: retell-ai
+  - name: Runway
+    ats: ashby
+    token: runway
+  - name: Sierra
+    ats: ashby
+    token: sierra
+  - name: Snorkel AI
+    ats: greenhouse
+    token: snorkelai
+  - name: Stability AI
+    ats: greenhouse
+    token: stabilityai
+  - name: Suno
+    ats: ashby
+    token: suno
+  - name: Surge AI
+    ats: ashby
+    token: surge-ai
+  - name: Turing
+    ats: greenhouse
+    token: turing
+  - name: Unstructured
+    ats: ashby
+    token: unstructured
+  - name: Vapi
+    ats: ashby
+    token: vapi
+  - name: World Labs
+    ats: ashby
+    token: worldlabs
+  - name: Writer
+    ats: ashby
+    token: writer
+  - name: Zilliz
+    ats: lever
+    token: zilliz
+  - name: xAI
+    ats: greenhouse
+    token: xai
+
+  # --- developer / data infra (added 2026-09-23; each board verified live) --------------------------------------
+  - name: 1Password
+    ats: ashby
+    token: 1password
+  - name: Airbyte
+    ats: ashby
+    token: airbyte
+  - name: Amplitude
+    ats: greenhouse
+    token: amplitude
+  - name: Astronomer
+    ats: ashby
+    token: astronomer
+  - name: Buildkite
+    ats: greenhouse
+    token: buildkite
+  - name: Chainguard
+    ats: greenhouse
+    token: chainguard
+  - name: CircleCI
+    ats: greenhouse
+    token: circleci
+  - name: Clerk
+    ats: ashby
+    token: clerk
+  - name: ClickHouse
+    ats: ashby
+    token: clickhouse
+  - name: CodeRabbit
+    ats: ashby
+    token: coderabbit
+  - name: Cribl
+    ats: greenhouse
+    token: cribl
+  - name: Depot
+    ats: ashby
+    token: depot
+  - name: Descope
+    ats: greenhouse
+    token: descope
+  - name: Docker
+    ats: ashby
+    token: docker
+  - name: Drata
+    ats: ashby
+    token: drata
+  - name: Elastic
+    ats: greenhouse
+    token: elastic
+  - name: Fivetran
+    ats: greenhouse
+    token: fivetran
+  - name: Grafana Labs
+    ats: greenhouse
+    token: grafanalabs
+  - name: Graphite
+    ats: ashby
+    token: graphite
+  - name: Hex
+    ats: ashby
+    token: hex
+  - name: Hightouch
+    ats: greenhouse
+    token: hightouch
+  - name: Honeycomb
+    ats: greenhouse
+    token: honeycomb
+  - name: Imply
+    ats: greenhouse
+    token: imply
+  - name: Inngest
+    ats: ashby
+    token: inngest
+  - name: Knock
+    ats: greenhouse
+    token: knock
+  - name: Kong
+    ats: ashby
+    token: kong
+  - name: LaunchDarkly
+    ats: greenhouse
+    token: launchdarkly
+  - name: Linear
+    ats: ashby
+    token: linear
+  - name: Materialize
+    ats: ashby
+    token: materialize
+  - name: Mintlify
+    ats: ashby
+    token: mintlify
+  - name: Mixpanel
+    ats: greenhouse
+    token: mixpanel
+  - name: MotherDuck
+    ats: ashby
+    token: motherduck
+  - name: Neon
+    ats: lever
+    token: neon
+  - name: Netlify
+    ats: greenhouse
+    token: netlify
+  - name: PlanetScale
+    ats: greenhouse
+    token: planetscale
+  - name: PostHog
+    ats: ashby
+    token: posthog
+  - name: Prefect
+    ats: ashby
+    token: prefect
+  - name: Railway
+    ats: ashby
+    token: railway
+  - name: ReadMe
+    ats: ashby
+    token: readme
+  - name: Render
+    ats: ashby
+    token: render
+  - name: Resend
+    ats: ashby
+    token: resend
+  - name: Sentry
+    ats: ashby
+    token: sentry
+  - name: Sigma Computing
+    ats: greenhouse
+    token: sigmacomputing
+  - name: SingleStore
+    ats: greenhouse
+    token: singlestore
+  - name: Speakeasy
+    ats: ashby
+    token: speakeasy
+  - name: StarTree
+    ats: greenhouse
+    token: startree
+  - name: Starburst
+    ats: greenhouse
+    token: starburst
+  - name: Supabase
+    ats: ashby
+    token: supabase
+  - name: Svix
+    ats: ashby
+    token: svix
+  - name: Tailscale
+    ats: greenhouse
+    token: tailscale
+  - name: Tinybird
+    ats: lever
+    token: tinybird
+  - name: Trigger.dev
+    ats: ashby
+    token: triggerdev
+  - name: Vanta
+    ats: ashby
+    token: vanta
+  - name: Warp
+    ats: ashby
+    token: warp
+  - name: WorkOS
+    ats: ashby
+    token: workos
+  - name: Zapier
+    ats: ashby
+    token: zapier
