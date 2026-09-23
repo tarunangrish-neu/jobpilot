@@ -87,6 +87,13 @@ scoring:
     llm: 0.7
   lca_boost: 5.0             # added to final score when the company has LCA history
 
+hn:
+  # HN "Who is hiring?" (latest monthly thread). Every kept comment costs one LLM call
+  # the first time (cached after), so it is opt-in. HN jobs are applied to manually.
+  enabled: false
+  max_comments: 80
+  keywords: [backend, infrastructure, platform, rust, payments, distributed, founding engineer, ml infra, ai infra]
+
 tailor:
   max_bullets: 12              # upper bound; bullets are trimmed further until the PDF is one page
   # auto: write a cover letter only when the application form has a cover-letter field

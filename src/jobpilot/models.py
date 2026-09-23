@@ -24,6 +24,7 @@ JOB_STATUSES = (
     "skipped",
     "rejected",
     "interviewing",
+    "offer",  # response tracking (spec 6.6), set by hand with `jobpilot mark`
 )
 
 VISA_FLAGS = ("ok", "unclear", "blocked")
@@ -146,6 +147,8 @@ class Application(SQLModel, table=True):
     tailoring_json: str = "{}"
     cover_letter_text: str = ""
     confirmation_screenshot_path: str = ""
+    # Manual-apply jobs (HN): drafted email/message for the human to send.
+    outreach_draft: str = ""
 
 
 class Event(SQLModel, table=True):

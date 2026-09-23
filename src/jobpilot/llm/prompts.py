@@ -143,6 +143,50 @@ $resume
 )
 
 
+HN_EXTRACT = Prompt(
+    name="hn_extract",
+    version=1,
+    system="""
+Extract job openings from one Hacker News "Who is hiring?" comment. A comment
+may list several roles at one company. Copy values from the text; use "" when
+something is not stated. Never guess an apply link: use one only if it appears
+in the comment (a URL or an email address).
+
+Reply with JSON:
+{"jobs": [{"company": "...", "role": "...", "location": "...", "remote": true|false,
+           "visa_mention": "exact words about visas/sponsorship, or empty",
+           "apply_link": "url or email from the comment, or empty"}]}
+If the comment is not a job posting, reply {"jobs": []}.
+""",
+    user="""
+$comment
+""",
+)
+
+
+OUTREACH = Prompt(
+    name="outreach",
+    version=1,
+    system="""
+Draft a short, direct outreach message (email or HN reply) from the candidate
+to the company below, at most 120 words. Every sentence about the candidate
+must restate a specific resume bullet in the resume's own words and numbers;
+never invent experience, numbers, tools, or years. Mention the role and one
+concrete thing from the posting in a sentence that does not use I/my/me.
+No clichés, no visa talk. Reply with JSON: {"subject": "...", "message": "..."}
+""",
+    user="""
+COMPANY: $company
+ROLE: $title
+POSTING
+$description
+
+RESUME
+$resume
+""",
+)
+
+
 RERANK = Prompt(
     name="rerank",
     version=1,

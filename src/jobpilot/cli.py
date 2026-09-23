@@ -87,15 +87,47 @@ async def _fetch_all(entries: list[dict[str, Any]]) -> dict[str, Any]:
     return results
 
 
+def _slug(name: str) -> str:
+    return "-".join("".join(c if c.isalnum() else " " for c in name.lower()).split())[:60] or "unknown"
+
+
+def _fetch_hn() -> list[str]:
+    """Fetch the latest HN thread; returns a table row."""
+    from .llm import LLMClient
+    from .sources import hn
+
+    async def run():
+        async with PoliteClient() as client:
+            return await hn.fetch(client, LLMClient(), config.settings().get("hn", {}))
+
+    postings, info = asyncio.run(run())
+    inserted = updated = 0
+    with db.session() as sess:
+        entries = {p.company_name: {"name": p.company_name, "ats": "hn", "token": _slug(p.company_name)} for p in postings}
+        index = db.sync_companies(sess, list(entries.values()))
+        for p in postings:
+            e = entries[p.company_name]
+            if db.upsert_posting(sess, p, index.get((e["ats"], e["token"]))) == "inserted":
+                inserted += 1
+            else:
+                updated += 1
+        sess.commit()
+    detail = info.get("error") or f"{info['extracted_from']}/{info['comments']} comments read, {info['failed']} failed"
+    return ["HN Who is hiring", "hn", str(len(postings)), str(inserted), str(updated), detail]
+
+
 @app.command()
-def fetch() -> None:
-    """Pull postings from every active board in config/companies.yaml."""
+def fetch(
+    hn: bool = typer.Option(None, "--hn/--no-hn", help="Include HN Who's Hiring (default: hn.enabled)."),
+) -> None:
+    """Pull postings from every active board in config/companies.yaml (and HN if enabled)."""
     entries = config.companies()
     if not entries:
         typer.echo("no active companies in config/companies.yaml")
         raise typer.Exit(1)
 
     db.init_db()
+    include_hn = config.settings().get("hn", {}).get("enabled", False) if hn is None else hn
     results = asyncio.run(_fetch_all(entries))
 
     rows: list[list[str]] = []
@@ -121,6 +153,9 @@ def fetch() -> None:
                     error or "ok",
                 ]
             )
+    if include_hn:
+        rows.append(_fetch_hn())
+    with db.session() as sess:
         total = sess.exec(select(func.count()).select_from(Job)).one()
 
     typer.echo(
@@ -319,6 +354,54 @@ def import_lca(files: list[Path] = typer.Argument(..., exists=True, dir_okay=Fal
     ]
     typer.echo(_table(rows, ["company", "certified LCAs", "matched employer names"]))
     typer.echo(f"\nrecomputed final scores for {rescored} jobs")
+
+
+@app.command("draft-outreach")
+def draft_outreach_cmd(top: int = typer.Option(20, "--top", help="Draft for the N best manual-apply (HN) jobs.")) -> None:
+    """Draft verified outreach messages for HN / manual-apply jobs."""
+    from .apply.manual import draft_outreach
+    from .ui import actions
+
+    db.init_db()
+    llm, resume = _llm(), _resume()
+    rows = actions.queue(("scored", "tailored"), sources=["hn"])[:top]
+    for r in rows:
+        text = asyncio.run(draft_outreach(llm, resume, r["id"]))
+        typer.echo(f"{r['id']:>6}  {r['company'][:24]:<24}  {'drafted' if text else 'nothing survived verification'}")
+    if not rows:
+        typer.echo("no scored HN jobs (enable hn in settings.yaml and run fetch/filter/score)")
+
+
+@app.command("run-daily")
+def run_daily(
+    top: int = typer.Option(30, "--top", help="How many jobs to tailor and prefill."),
+    skip_prefill: bool = typer.Option(False, "--skip-prefill", help="Stop after tailoring."),
+) -> None:
+    """fetch -> filter -> score -> tailor -> prefill. Never submits anything."""
+    steps = [
+        ("fetch", lambda: fetch(hn=None)),
+        ("filter", lambda: filter_cmd(no_llm=False)),
+        ("score", lambda: score(top=0, limit=top)),
+        ("tailor", lambda: tailor(top=top, job=[], cover_letter=None, regenerate=False)),
+    ]
+    if config.settings().get("hn", {}).get("enabled", False):
+        steps.append(("draft-outreach", lambda: draft_outreach_cmd(top=top)))
+    if not skip_prefill:
+        steps.append(("prefill", lambda: prefill(top=top, job=[], headless=None)))
+    for name, step in steps:
+        typer.echo(f"\n=== {name} ===")
+        step()
+    typer.echo("\nDone. Review and approve in `jobpilot ui` -- nothing has been submitted.")
+
+
+@app.command()
+def ui(port: int = typer.Option(8501, "--port")) -> None:
+    """Launch the Streamlit review app."""
+    import subprocess
+    import sys
+
+    script = Path(__file__).resolve().parent / "ui" / "review_app.py"
+    raise typer.Exit(subprocess.call([sys.executable, "-m", "streamlit", "run", str(script), "--server.port", str(port)]))
 
 
 @app.command()
