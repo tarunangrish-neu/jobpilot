@@ -8,6 +8,7 @@ single prefilled job, and that button stays disabled until you tick the
 from __future__ import annotations
 
 import json
+import re
 
 import streamlit as st
 
@@ -15,10 +16,39 @@ from jobpilot import db
 from jobpilot.models import JOB_STATUSES
 from jobpilot.ui import actions
 
-st.set_page_config(page_title="JobPilot review", layout="wide")
+st.set_page_config(page_title="JobPilot", page_icon="🧭", layout="wide")
 db.init_db()
 
 VISA_STYLE = {"ok": st.success, "unclear": st.warning, "blocked": st.error}
+STATUS_COLOR = {"scored": "blue", "tailored": "violet", "prefilled": "orange", "needs_human": "red",
+                "approved": "green", "submitted": "green", "skipped": "gray"}
+
+
+def _fmt(value, spec: str) -> str:
+    return format(value, spec) if value is not None else "–"
+
+
+# Slow checks (subprocesses, whole-log scans) are cached so ticking a box doesn't re-run them.
+# The project root is part of the key so a different checkout never sees another's results.
+@st.cache_data(ttl=60, show_spinner=False)
+def _readiness(_root: str) -> list[tuple[str, str]]:
+    return actions.readiness()
+
+
+@st.cache_data(ttl=30, show_spinner=False)
+def _llm_stats(_root: str) -> list[dict]:
+    return actions.llm_stats()
+
+
+def _plain(text: str) -> str:
+    """Show plain text as readable prose: escape Markdown (a `$` in a salary starts LaTeX) and keep line breaks."""
+    return re.sub(r"([\\`*_{}\[\]<>()#+\-.!|$~])", r"\\\1", text).replace("\n", "  \n")
+
+
+def _root() -> str:
+    from jobpilot import config
+
+    return str(config.project_root())
 
 
 def _form_url(d: actions.Detail) -> str:
@@ -32,12 +62,14 @@ def _form_url(d: actions.Detail) -> str:
 def _header(d: actions.Detail) -> None:
     job, company = d.job, d.company
     st.subheader(f"{job.title} — {company.name if company else '?'}")
-    st.caption(f"{job.location or 'location not stated'} · {job.source} · status **{job.status}** · job #{job.id}")
+    st.badge(job.status.replace("_", " "), color=STATUS_COLOR.get(job.status, "gray"))
+    st.caption(f"📍 {job.location or 'location not stated'} · via {job.source} · job #{job.id}"
+               + (f" · [posting]({job.url})" if job.url else ""))
 
-    c1, c2, c3, c4 = st.columns(4)
-    c1.metric("Final score", f"{job.final_score:.1f}" if job.final_score is not None else "–")
-    c2.metric("LLM fit", f"{job.llm_score:.0f}" if job.llm_score is not None else "–")
-    c3.metric("Embedding", f"{job.embed_score:.3f}" if job.embed_score is not None else "–")
+    c1, c2, c3, c4 = st.columns(4, border=True)
+    c1.metric("Final score", _fmt(job.final_score, ".1f"), help="Combined rank score, 0–100.")
+    c2.metric("LLM fit", _fmt(job.llm_score, ".0f"), help="How well the LLM thinks your resume fits, 0–100.")
+    c3.metric("Embedding", _fmt(job.embed_score, ".3f"), help="Resume/posting similarity, 0–1.")
     c4.metric("Seniority fit", d.details.get("seniority_fit", "–"))
 
     left, right = st.columns(2)
@@ -50,12 +82,13 @@ def _header(d: actions.Detail) -> None:
             st.info("No LCA history (or no LCA file imported)")
 
     reasons = d.details.get("reasons") or ([job.llm_reason] if job.llm_reason else [])
+    why, gaps = st.columns(2)
     if reasons:
-        st.markdown("**Why it ranks here**\n" + "\n".join(f"- {r}" for r in reasons))
+        why.markdown("**Why it ranks here**\n" + "\n".join(f"- {r}" for r in reasons))
     if d.details.get("missing_skills"):
-        st.markdown("**Missing skills:** " + ", ".join(d.details["missing_skills"]))
+        gaps.markdown("**Missing skills**\n" + "\n".join(f"- {m}" for m in d.details["missing_skills"]))
     with st.expander("Job description"):
-        st.text(job.description_text)
+        st.markdown(_plain(job.description_text) if job.description_text else "_No description._")
 
 
 def _resume_tab(d: actions.Detail) -> None:
@@ -64,7 +97,7 @@ def _resume_tab(d: actions.Detail) -> None:
         return
     png = actions.resume_preview(d.job.id)
     if png:
-        st.image(str(png), use_container_width=True)
+        st.image(str(png), width="stretch")
     try:
         with open(d.app.resume_path, "rb") as fh:
             st.download_button("Download resume PDF", fh.read(), file_name=d.app.resume_path.rsplit("/", 1)[-1])
@@ -105,7 +138,7 @@ def _dry_run_section(d: actions.Detail) -> None:
     st.dataframe(
         [{"question": r["question"], "type": r["type"], "required": "yes" if r["required"] else "",
           "would fill": r["answer"], "from": r["source"]} for r in rows],
-        hide_index=True, use_container_width=True,
+        hide_index=True, width="stretch",
     )
     for label, text in (plan.get("drafted") or {}).items():
         st.warning(f"LLM draft for **{label}** (checked against your resume; edit before a real prefill):")
@@ -116,7 +149,7 @@ def _dry_run_section(d: actions.Detail) -> None:
         st.info("This form accepts a cover letter; a real prefill will try to write one.")
     if plan.get("screenshot"):
         try:
-            st.image(plan["screenshot"], caption="The form as loaded (untouched)", use_container_width=True)
+            st.image(plan["screenshot"], caption="The form as loaded (untouched)", width="stretch")
         except Exception:  # noqa: BLE001
             pass
     st.link_button("Open this form", plan.get("url", ""))
@@ -150,7 +183,7 @@ def _screens_tab(d: actions.Detail) -> None:
     ):
         if path:
             try:
-                st.image(path, caption=label, use_container_width=True)
+                st.image(path, caption=label, width="stretch")
                 shown = True
             except Exception:  # noqa: BLE001 - file removed
                 st.warning(f"{label}: screenshot file missing")
@@ -161,7 +194,7 @@ def _screens_tab(d: actions.Detail) -> None:
 def _history_tab(d: actions.Detail) -> None:
     st.dataframe(
         [{"when (UTC)": e.created_at, "event": e.type, "details": e.payload_json} for e in d.events],
-        hide_index=True, use_container_width=True,
+        hide_index=True, width="stretch",
     )
 
 
@@ -173,7 +206,7 @@ def _actions(d: actions.Detail, edits: dict[str, str]) -> None:
         key=f"reviewed-{job.id}", disabled=job.status != "prefilled",
     )
     c1, c2, c3, c4, c5 = st.columns(5)
-    if c1.button("Approve & Submit", type="primary", disabled=not (reviewed and job.status == "prefilled"),
+    if c1.button("Approve & Submit", width="stretch", type="primary", disabled=not (reviewed and job.status == "prefilled"),
                  key=f"approve-{job.id}"):
         from jobpilot.apply.submit import SubmitRefused
 
@@ -205,13 +238,14 @@ def _actions(d: actions.Detail, edits: dict[str, str]) -> None:
         st.rerun()
 
 
+@st.fragment
 def job_view(job_id: int) -> None:
     d = actions.detail(job_id)
     if d is None:
         st.error(f"No job {job_id}")
         return
     _header(d)
-    tabs = st.tabs(["Resume", "Cover letter", "Answers", "Screenshots", "History"])
+    tabs = st.tabs(["📄 Resume", "✉️ Cover letter", "📝 Answers", "🖼️ Screenshots", "🕓 History"])
     with tabs[0]:
         _resume_tab(d)
     with tabs[1]:
@@ -235,19 +269,38 @@ def queue_page() -> None:
         min_score = st.slider("Minimum score", 0, 100, 0)
     rows = actions.queue(tuple(statuses), visa or None, companies or None, float(min_score), exclude_sources=("hn",))
     if not rows:
-        st.info("Nothing in the queue for these filters. Run `jobpilot run-daily`.")
+        st.info("Nothing in the queue for these filters. Run the pipeline stages from the Pipeline page.")
         return
-    event = st.dataframe(
-        rows, hide_index=True, use_container_width=True, on_select="rerun", selection_mode="single-row",
-        column_config={"score": st.column_config.NumberColumn(format="%.1f"),
-                       "lca": st.column_config.NumberColumn("LCA filings")},
-        key="queue-table",
-    )
-    picked = event.selection.rows if event and event.selection else []
+    st.caption(f"{len(rows)} jobs, best first. Click a row (or use the picker below) to review it.")
     ids = [r["id"] for r in rows]
+
+    def pick_from_table() -> None:
+        # Callbacks run before the script, so `ids` is the table the user just clicked.
+        picked = st.session_state["queue-table"].selection.rows
+        if picked:
+            st.session_state["queue-job"] = ids[picked[0]]
+
+    st.dataframe(
+        rows, hide_index=True, width="stretch", height=min(36 * (len(rows) + 1) + 3, 360),
+        on_select=pick_from_table, selection_mode="single-row", key="queue-table",
+        column_order=("rank", "company", "title", "score", "visa", "status", "location", "lca"),
+        column_config={
+            "rank": st.column_config.NumberColumn("#", width="small"),
+            "company": st.column_config.TextColumn("Company"),
+            "title": st.column_config.TextColumn("Role", width=380),
+            "score": st.column_config.ProgressColumn("Score", format="%.0f", min_value=0, max_value=100),
+            "visa": st.column_config.TextColumn("Visa", width="small"),
+            "status": st.column_config.TextColumn("Status"),
+            "location": st.column_config.TextColumn("Location"),
+            "lca": st.column_config.NumberColumn("LCA filings", width="small"),
+        },
+    )
+    if st.session_state.get("queue-job") not in ids:
+        st.session_state.pop("queue-job", None)
+    by_id = {r["id"]: r for r in rows}
     job_id = st.selectbox(
-        "Job", ids, index=picked[0] if picked else 0,
-        format_func=lambda i: next(f"#{r['rank']} {r['company']} — {r['title']}" for r in rows if r["id"] == i),
+        "Reviewing", ids, key="queue-job",
+        format_func=lambda i: f"#{by_id[i]['rank']}  {by_id[i]['company']} — {by_id[i]['title']}",
     )
     st.divider()
     job_view(job_id)
@@ -306,7 +359,7 @@ STAGE_CARDS = (
     ("fetch", "fetch", "1 · Fetch", "Pull every board in companies.yaml (and HN if enabled). Network only, cached 6h."),
     ("filter", "filter", "2 · Filter", "Dedupe, title/location/age rules, visa screen (LLM only for ambiguous wording)."),
     ("score", "score", "3 · Rank", "Embed every filtered job, LLM-rerank the top N against your resume."),
-    ("tailor", "tailor", "4 · Tailor", "One-page resume per top job, built only from your master resume."),
+    ("tailor", "tailor", "4 · Tailor", "Resume per top job: your master resume reordered and sharpened for the role, same length."),
     ("dry-run", "prefill", "5 · Dry-run forms", "Read each live form and plan every answer. Types and uploads nothing."),
     ("prefill", "prefill", "6 · Prefill", "Fill forms in the browser and stop before submit. Uploads your resume."),
 )
@@ -339,31 +392,120 @@ def _stage_args(key: str) -> list[str] | None:
     return []
 
 
-@st.fragment(run_every=3)
-def _live_runs() -> None:
+FUNNEL_GROUPS = (
+    ("🔎 Find", "Boards fetched and screened", ("fetched", "awaiting_filter", "filtered_out", "awaiting_score")),
+    ("🛠️ Prepare", "Ranked and made ready to apply", ("scored", "tailored", "dry_run", "prefilled")),
+    ("✅ Finish", "Waiting on you, then sent", ("needs_human", "approved", "submitted")),
+)
+
+
+def _setup_checks() -> None:
+    checks = _readiness(_root())
+    errors = [m for level, m in checks if level == "error"]
+    warnings = [m for level, m in checks if level == "warning"]
+    if errors:
+        st.error("**Fix before running the pipeline**\n" + "\n".join(f"- {m}" for m in errors))
+    if warnings:
+        st.warning("\n".join(f"- {m}" for m in warnings))
+    if not errors and not warnings:
+        st.success(checks[0][1], icon="✅")
+
+
+def _funnel() -> None:
+    data = actions.funnel()
+    counts, labels = data["counts"], {key: (label, why) for key, label, why in actions.FUNNEL}
+    # One row per group: side-by-side groups leave tiles too narrow, truncating labels and counts.
+    for title, blurb, keys in FUNNEL_GROUPS:
+        with st.container(border=True):
+            head, *tiles = st.columns([1.3, 1, 1, 1, 1], vertical_alignment="center")
+            head.markdown(f"**{title}**")
+            head.caption(blurb)
+            for tile, key in zip(tiles, keys):
+                label, why = labels[key]
+                tile.metric(label, f"{counts.get(key, 0):,}", help=why)
+    steps = actions.next_steps(counts)
+    if steps:
+        st.info("**What to do next**\n" + "\n".join(f"- {why}" for _, why in steps), icon="👉")
+
+
+def _now_running(active: list, external: list[str]) -> None:
     from datetime import datetime, timezone
 
     from jobpilot import runs
 
-    active = runs.refresh()
-    if not active:
-        external = runs.external_pipelines()
-        if external:
-            st.warning("A pipeline started outside the UI is running, so stages here are paused until it ends:\n"
-                       + "\n".join(f"- `{e}`" for e in external))
-        return
+    if external and not active:
+        st.warning("A pipeline started outside the UI is running, so stages here are paused until it ends:\n"
+                   + "\n".join(f"- `{e}`" for e in external))
     for run in active:
         started = run.started_at if run.started_at.tzinfo else run.started_at.replace(tzinfo=timezone.utc)
         elapsed = int((datetime.now(timezone.utc) - started).total_seconds())
         prog = runs.llm_progress(started)
-        st.info(f"**Running: {run.stage}** (run #{run.id}) · {elapsed // 60}m {elapsed % 60:02d}s · "
-                f"{prog['calls']} LLM calls so far"
-                + (f", ~{prog['median_model_s']:.0f}s each" if prog["median_model_s"] else "")
-                + (f", {prog['errors']} failed" if prog["errors"] else ""))
-        st.code(runs.log_tail(run, 25) or "(starting...)", language=None)
-        if st.button("Stop this run", key=f"stop-{run.id}"):
-            runs.stop(run.id)
+        with st.container(border=True):
+            head, stop = st.columns([5, 1], vertical_alignment="center")
+            head.markdown(f"**⏳ Running: {run.stage}** · run #{run.id} · {elapsed // 60}m {elapsed % 60:02d}s · "
+                          f"{prog['calls']} LLM calls"
+                          + (f", ~{prog['median_model_s']:.0f}s each" if prog["median_model_s"] else "")
+                          + (f", {prog['errors']} failed" if prog["errors"] else ""))
+            if stop.button("Stop this run", key=f"stop-{run.id}", width="stretch"):
+                runs.stop(run.id)
+                st.rerun()
+            # Fixed height, so the page doesn't jump as the log grows.
+            st.code(runs.log_tail(run, 40) or "(starting...)", language=None, height=280)
+
+
+def _status(polling: bool) -> None:
+    """Funnel counts and the live run panel."""
+    from jobpilot import runs
+
+    active = runs.refresh()
+    external = [] if active else runs.external_pipelines()
+    if polling and not active and not external:
+        # The run just ended: redraw the whole page once, so the stage buttons unlock.
+        st.rerun()
+    _funnel()
+    _now_running(active, external)
+
+
+# Only poll while something is running; an idle page never reruns on its own.
+_status_live = st.fragment(run_every=3)(_status)
+
+
+@st.fragment
+def _stage_card(key: str, command: str, title: str, what: str, paused: bool) -> None:
+    """A fragment, so changing a card's options reruns just that card, not the page."""
+    from jobpilot import runs
+
+    with st.container(border=True, height="stretch"):
+        st.markdown(f"**{title}**")
+        st.caption(what)
+        args = _stage_args(key)
+        if st.button(f"Run {title.split('· ')[1].lower()}", key=f"run-{key}", type="primary",
+                     disabled=paused or args is None, width="stretch"):
+            try:
+                run = runs.start(command, args)
+                st.session_state["flash"] = f"Started {command} (run #{run.id})"
+            except RuntimeError as exc:
+                st.session_state["flash"] = f"⚠️ {exc}"
             st.rerun()
+
+
+@st.fragment
+def _recent_runs() -> None:
+    from jobpilot import runs
+
+    recent = runs.recent()
+    if not recent:
+        st.caption("No runs started from the UI yet.")
+        return
+    st.dataframe(
+        [{"#": r.id, "stage": r.stage, "args": " ".join(json.loads(r.args_json)), "status": r.status,
+          "started (UTC)": r.started_at, "finished (UTC)": r.finished_at, "exit": r.exit_code}
+         for r in recent],
+        hide_index=True, width="stretch",
+    )
+    pick = st.selectbox("Show log for run", [r.id for r in recent], key="log-pick")
+    chosen = next(r for r in recent if r.id == pick)
+    st.code(runs.log_tail(chosen, 80) or "(empty)", language=None, height=320)
 
 
 def pipeline_page() -> None:
@@ -371,73 +513,53 @@ def pipeline_page() -> None:
 
     st.title("Pipeline")
     st.caption("Run each stage here and watch jobs move through it. Nothing is ever submitted from this page.")
+    if flash := st.session_state.pop("flash", None):
+        st.toast(flash)
 
-    for level, message in actions.readiness():
-        {"error": st.error, "warning": st.warning, "ok": st.success}[level](message)
+    head, recheck = st.columns([6, 1], vertical_alignment="center")
+    head.subheader("Setup")
+    if recheck.button("Re-check", key="recheck", width="stretch"):
+        _readiness.clear()
+    _setup_checks()
 
-    data = actions.funnel()
-    counts = data["counts"]
-    for chunk in (actions.FUNNEL[:6], actions.FUNNEL[6:]):
-        cols = st.columns(len(chunk))
-        for col, (key, label) in zip(cols, chunk):
-            col.metric(label, counts.get(key, 0))
-
-    steps = actions.next_steps(counts)
-    if steps:
-        st.markdown("**Next:** " + " · ".join(why for _, why in steps))
+    st.subheader("Where your jobs are")
+    reason = runs.busy()
+    (_status_live if reason else _status)(polling=bool(reason))
 
     st.subheader("Run a stage")
-    _live_runs()
-    reason = runs.busy()
-    for row in (STAGE_CARDS[:3], STAGE_CARDS[3:]):
-        cols = st.columns(3)
-        for col, (key, command, title, what) in zip(cols, row):
-            with col.container(border=True):
-                st.markdown(f"**{title}**")
-                st.caption(what)
-                args = _stage_args(key)
-                if st.button(f"Run {title.split('· ')[1].lower()}", key=f"run-{key}",
-                             disabled=bool(reason) or args is None, use_container_width=True):
-                    try:
-                        run = runs.start(command, args)
-                        st.toast(f"Started {command} (run #{run.id})")
-                    except RuntimeError as exc:
-                        st.error(str(exc))
-                    st.rerun()
     if reason:
         st.caption(f"Stages are paused: {reason}.")
+    for row in (STAGE_CARDS[:3], STAGE_CARDS[3:]):
+        for col, card in zip(st.columns(3), row):
+            with col:
+                _stage_card(*card, paused=bool(reason))
 
+    st.subheader("Details")
     with st.expander("Where the time goes (LLM calls, last 24h)"):
-        stats = actions.llm_stats()
+        stats = _llm_stats(_root())
         if stats:
-            st.dataframe(stats, hide_index=True, use_container_width=True)
+            st.dataframe(stats, hide_index=True, width="stretch")
             st.caption("'waiting' is time queued for a free model slot; 'model' is generation time. "
                        "See README → Speeding it up.")
         else:
             st.caption("No LLM calls logged in the last 24h.")
 
     with st.expander("Jobs by source and status"):
-        statuses = sorted({s for per in data["by_source"].values() for s in per})
+        by_source = actions.funnel()["by_source"]
+        statuses = sorted({s for per in by_source.values() for s in per})
         st.dataframe(
-            [{"source": src, **{s: per.get(s, 0) for s in statuses}} for src, per in sorted(data["by_source"].items())],
-            hide_index=True, use_container_width=True,
+            [{"source": src, **{s: per.get(s, 0) for s in statuses}} for src, per in sorted(by_source.items())],
+            hide_index=True, width="stretch",
         )
 
     with st.expander("Recent runs"):
-        recent = runs.recent()
-        if recent:
-            st.dataframe(
-                [{"#": r.id, "stage": r.stage, "args": " ".join(json.loads(r.args_json)), "status": r.status,
-                  "started (UTC)": r.started_at, "finished (UTC)": r.finished_at, "exit": r.exit_code}
-                 for r in recent],
-                hide_index=True, use_container_width=True,
-            )
-            pick = st.selectbox("Show log for run", [r.id for r in recent], key="log-pick")
-            chosen = next(r for r in recent if r.id == pick)
-            st.code(runs.log_tail(chosen, 80) or "(empty)", language=None)
-        else:
-            st.caption("No runs started from the UI yet.")
+        _recent_runs()
 
 
 PAGES = {"Pipeline": pipeline_page, "Review queue": queue_page, "Manual apply": manual_page, "Stats": stats_page}
-PAGES[st.sidebar.radio("View", list(PAGES))]()
+with st.sidebar:
+    st.markdown("## 🧭 JobPilot")
+    st.caption("Find, tailor, and review applications. Nothing is submitted without your approval.")
+    page = st.radio("View", list(PAGES))
+    st.divider()
+PAGES[page]()
