@@ -1,9 +1,10 @@
+# Pinned settings for the test suite, so tuning config/settings.yaml never breaks tests.
 # JobPilot configuration. Personal answers live in config/answers.yaml (gitignored).
 
 http:
   user_agent: "JobPilot/0.1 (personal job search tool)"
   min_seconds_between_requests_per_host: 1.0
-  concurrency: 8
+  concurrency: 4
   timeout_seconds: 30
   cache_ttl_hours: 6
 
@@ -11,15 +12,11 @@ llm:
   provider: ollama            # ollama | openai_compatible
   text_model: "qwen2.5:7b-instruct"
   embed_model: "nomic-embed-text"
-  timeout_seconds: 120        # model time only; waiting for a free slot doesn't count
-  max_retries: 4
+  timeout_seconds: 120
+  max_retries: 2
   log_path: "logs/llm.jsonl"
-  # Model calls in flight at once, across ALL jobpilot processes. Local Ollama runs
-  # ~1 generation at a time, so more just queues. Raise to 4-8 for a hosted provider.
   concurrency: 1
-  keep_alive: "30m"           # keep models loaded between stages (reload costs seconds)
-  # Optional faster model per task, e.g. after `ollama pull qwen2.5:3b-instruct`:
-  #   task_models: {visa_check: "qwen2.5:3b-instruct", hn_extract: "qwen2.5:3b-instruct"}
+  keep_alive: "30m"
   task_models: {}
 
 filters:
@@ -28,6 +25,7 @@ filters:
     - united states
     - usa
     - us
+    - remote
     - remote - us
     - new york
     - new jersey
@@ -36,25 +34,6 @@ filters:
     - austin
     - boston
     - chicago
-    - washington
-    - washington d.c.
-    - d.c.
-    - virginia
-    - maryland
-    - delaware
-    - pennsylvania
-    - new hampshire
-    - vermont
-    - massachusetts
-    - rhode island
-    - connecticut
-    - new york city
-    - brooklyn
-    - queens
-    - bronx
-    - manhattan
-    - staten island
-    - long island
   # Keep false: boards mark roles "Remote - Japan" / "Remote - EU" as remote, and
   # those are unusable on F-1 STEM OPT. Location must still clear locations_allow.
   allow_remote_anywhere: false
@@ -62,11 +41,10 @@ filters:
     - backend
     - back end
     - infrastructure
-    - manager
-    - fullstack
     - platform
     - founding engineer
     - distributed systems
+    - rust
     - payments
     - systems engineer
     - software engineer
@@ -78,6 +56,7 @@ filters:
     - principal
     - staff
     - director
+    - manager
     - frontend
     - front end
     - designer
@@ -115,7 +94,7 @@ scoring:
 hn:
   # HN "Who is hiring?" (latest monthly thread). Every kept comment costs one LLM call
   # the first time (cached after), so it is opt-in. HN jobs are applied to manually.
-  enabled: true
+  enabled: false
   max_comments: 80
   keywords: [backend, infrastructure, platform, rust, payments, distributed, founding engineer, ml infra, ai infra]
 
@@ -127,6 +106,6 @@ tailor:
   cover_letter_max_words: 200
 
 apply:
-  daily_submission_cap: 100
-  answer_match_threshold: 0.85   # cosine similarity for mapping a form question to the answer bank
-  headless: true
+  daily_submission_cap: 40
+  answer_match_threshold: 0.82   # cosine similarity for mapping a form question to the answer bank
+  headless: false

@@ -11,13 +11,13 @@ review queue.
 
 | Milestone | Scope | State |
 |---|---|---|
-| M1 | Sourcing (Greenhouse / Lever / Ashby) + SQLite | ✅ done |
+| M1 | Sourcing (Greenhouse / Lever / Ashby; later Workable / SmartRecruiters / Recruitee) + SQLite | ✅ done |
 | M2 | Filters, visa screen, LCA import, embedding + LLM rerank | ✅ done |
 | M3 | Resume tailoring, anti-fabrication check, Typst rendering | ✅ done |
 | M4 | Streamlit review UI | ✅ done |
 | M5 | Playwright prefill, stop-before-submit | ✅ built; live acceptance needs your `answers.yaml` (see below) |
 | M6 | Approve & submit, daily cap, stats | ✅ built; tested on a local form only |
-| M7 | HN "Who's Hiring" + manual-apply drafts | ✅ done (opt-in: `hn.enabled`) |
+| M7 | HN "Who's Hiring" + manual-apply drafts | ✅ done (`hn.enabled`, on by default) |
 
 ## Setup
 
@@ -42,18 +42,30 @@ Then fill in:
   These are used verbatim; the LLM never generates work-authorization, sponsorship, EEO, or
   salary answers. Anything left empty is never guessed: the application becomes `needs_human`.
   Add recurring questions to `common_questions` (`a: null` = LLM drafts it for review).
-- `config/companies.yaml` — the boards to watch. Ships with eight working placeholders.
+- `config/companies.yaml` — the boards to watch. Ships with ~60 verified fintech, crypto, AI-infra,
+  and dev-infra boards; edit freely.
 - `config/settings.yaml` — models, thresholds, filter keywords, rate limits, daily cap.
 
 ## Daily usage
 
 ```bash
-uv run jobpilot run-daily --top 30   # fetch -> filter -> score -> tailor -> prefill; never submits
-uv run jobpilot ui                   # review, edit, approve & submit one at a time
+make                                 # set up anything missing, then open the UI
 ```
 
-The `Makefile` wraps all of these (`make` lists targets; e.g. `make setup`, `make daily TOP=20`,
-`make tailor JOB=412`, `make ui`, `make test`).
+The UI opens on the **Pipeline** page: how many jobs sit at each stage (fetched →
+filtered → ranked → tailored → dry-run → prefilled → submitted), what to run next, and a
+card per stage (Fetch, Filter, Rank, Tailor, Dry-run forms, Prefill) with its options.
+A stage runs in the background; the page shows its live log and LLM progress, and you
+can stop it. Only one stage runs at a time, including ones started from a terminal.
+**Dry-run forms** reads each live application form and shows, question by question,
+what would be filled and from where (answers.yaml, your tailored resume, an LLM draft
+to review, or "needs you"), without typing or uploading anything. The **Review queue**
+page is where you review, edit, and approve & submit one application at a time.
+
+Without the UI: `uv run jobpilot run-daily --top 30` (never submits), then `uv run jobpilot ui`.
+
+`make` is idempotent, so rerunning it every day is cheap. `make help` lists the individual
+targets (e.g. `make daily TOP=20`, `make tailor JOB=412`, `make test`).
 
 Or stage by stage:
 
@@ -71,6 +83,31 @@ uv run jobpilot mark 412 interviewing      # rejected / interviewing / offer, by
 
 `fetch` is idempotent — re-running refreshes existing rows rather than duplicating them.
 Every stage only picks up jobs the previous stage finished, so re-running any of them is safe.
+
+### Speeding it up
+
+Almost all the time goes to local LLM calls. The Pipeline page's "Where the time goes"
+panel splits each prompt's time into *waiting* (queued for a model slot) and *model*
+(generation). On an M-series Mac, qwen2.5-7b takes ~10 s per call, and one daily run
+makes ~150-250 calls. Levers, biggest first:
+
+1. **Don't run two pipelines at once.** They share one local model and just take turns;
+   the UI refuses to start a stage while another is running.
+2. **Keep `llm.concurrency: 1` for local Ollama.** Ollama generates about one reply at a
+   time; more in-flight requests only queue (and used to time out and retry). Raise it to
+   4-8 only for a hosted provider.
+3. **Make fewer calls.** Rerank fewer jobs (Rank card "top N", default 30 in the UI) and
+   tailor fewer (top 10-15). Leave HN off unless you want it (~1 call per comment).
+   Tighten `filters.title_include` / `title_exclude`: every job that passes the filters
+   costs an embedding, and the top N cost a rerank each.
+4. **Use a small model for the easy tasks.** `ollama pull qwen2.5:3b-instruct`, then
+   `llm.task_models: {visa_check: "qwen2.5:3b-instruct", hn_extract: "qwen2.5:3b-instruct"}`
+   is 2-3x faster for those; keep the 7B for ranking and tailoring.
+5. **Or use a hosted model** (`llm.provider: openai_compatible`, e.g. Groq): 10x+ faster,
+   but job descriptions and your resume leave your machine.
+6. **Reruns are cheap**: HTTP responses (6 h), embeddings, and LLM answers are cached, so
+   re-running a stage only pays for new jobs or changed prompts. `keep_alive: 30m` keeps
+   models loaded between stages.
 
 ### How submission works
 
@@ -113,6 +150,16 @@ uv run jobpilot discover-token https://www.ramp.com/careers
 Paste the printed block into `config/companies.yaml`. Detection reads the careers page for a
 board URL and falls back to guessing tokens from the domain; every candidate is confirmed
 with a real API call, so a reported token always works.
+
+Six boards are supported: Greenhouse, Lever, Ashby, Workable, SmartRecruiters, and Recruitee.
+Only the first three have form fillers. Workable, SmartRecruiters, and Recruitee jobs are
+fetched, filtered, scored, and tailored like any other, but never prefilled: open the posting
+from the review UI, apply by hand, then click **I applied manually**. SmartRecruiters' list
+endpoint has no descriptions, so `fetch` requests details only for postings whose title and
+location already pass your filters.
+
+The first `fetch` with `hn.enabled` runs one local-LLM extraction per HN comment (up to
+`hn.max_comments`, roughly 15 s each on a 7B model); later runs hit the cache.
 
 ## Tests
 

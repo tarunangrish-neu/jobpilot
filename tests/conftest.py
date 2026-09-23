@@ -21,8 +21,10 @@ def temp_root(tmp_path, monkeypatch):
     from jobpilot import config, db
 
     (tmp_path / "config").mkdir()
-    for f in ("settings.yaml", "companies.yaml", "answers.example.yaml"):
+    for f in ("companies.yaml", "answers.example.yaml"):
         shutil.copy(REPO / "config" / f, tmp_path / "config" / f)
+    # Pinned, not config/settings.yaml: personal tuning must not change test outcomes.
+    shutil.copy(FIXTURES / "settings.test.yaml", tmp_path / "config" / "settings.yaml")
 
     monkeypatch.setenv("JOBPILOT_ROOT", str(tmp_path))
     config.settings.cache_clear()
@@ -49,8 +51,9 @@ class FakeBackend:
         self.chat_calls: list[list[dict]] = []
         self.embed_calls = 0
 
-    async def chat(self, messages, schema):
+    async def chat(self, messages, schema, model=None, max_tokens=None):
         self.chat_calls.append(messages)
+        self.last_model, self.last_max_tokens = model, max_tokens
         return self.reply(messages)
 
     async def embed(self, texts):

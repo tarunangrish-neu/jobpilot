@@ -29,7 +29,7 @@ JOB_STATUSES = (
 
 VISA_FLAGS = ("ok", "unclear", "blocked")
 
-ATS_SOURCES = ("greenhouse", "lever", "ashby", "hn")
+ATS_SOURCES = ("greenhouse", "lever", "ashby", "workable", "smartrecruiters", "recruitee", "hn")
 
 
 def utcnow() -> datetime:
@@ -149,6 +149,8 @@ class Application(SQLModel, table=True):
     confirmation_screenshot_path: str = ""
     # Manual-apply jobs (HN): drafted email/message for the human to send.
     outreach_draft: str = ""
+    # `prefill --dry-run`: how the live form would be filled; nothing typed or uploaded.
+    dry_run_json: str = "{}"
 
 
 class Event(SQLModel, table=True):
@@ -159,6 +161,22 @@ class Event(SQLModel, table=True):
     type: str = Field(index=True)
     payload_json: str = "{}"
     created_at: datetime = Field(default_factory=utcnow)
+
+
+class Run(SQLModel, table=True):
+    """A pipeline stage started from the review UI (see jobpilot/runs.py)."""
+
+    __tablename__ = "runs"
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    stage: str
+    args_json: str = "[]"
+    pid: Optional[int] = None
+    status: str = Field(default="running", index=True)  # running | done | failed | stopped
+    started_at: datetime = Field(default_factory=utcnow)
+    finished_at: Optional[datetime] = None
+    exit_code: Optional[int] = None
+    log_path: str = ""
 
 
 # --- Caches ----------------------------------------------------------------

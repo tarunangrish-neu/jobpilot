@@ -13,7 +13,7 @@ from jobpilot.filters import rules, visa
 
 from conftest import REPO
 
-SETTINGS = yaml.safe_load((REPO / "config" / "settings.yaml").read_text())
+SETTINGS = yaml.safe_load((REPO / "tests" / "fixtures" / "settings.test.yaml").read_text())
 CFG = SETTINGS["filters"]
 PHRASES = SETTINGS["visa"]["blocking_phrases"]
 

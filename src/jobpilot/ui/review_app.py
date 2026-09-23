@@ -7,6 +7,8 @@ single prefilled job, and that button stays disabled until you tick the
 
 from __future__ import annotations
 
+import json
+
 import streamlit as st
 
 from jobpilot import db
@@ -85,11 +87,48 @@ def _cover_tab(d: actions.Detail) -> None:
         st.markdown(f"- _{item['sentence']}_ — {item['why']}")
 
 
+def _dry_run_section(d: actions.Detail) -> None:
+    """How the live form would be filled, from `prefill --dry-run`. Nothing was typed or uploaded."""
+    plan = d.dry_run
+    rows = plan["rows"]
+    by_source: dict[str, int] = {}
+    for r in rows:
+        by_source[r["source"]] = by_source.get(r["source"], 0) + 1
+    st.markdown(f"**Dry run of the live form** ({plan.get('at', '')[:16].replace('T', ' ')} UTC) — "
+                "nothing was typed, uploaded, or submitted.")
+    tiles = st.columns(4)
+    tiles[0].metric("Questions", len(rows))
+    tiles[1].metric("From answers.yaml / resume",
+                    sum(n for s, n in by_source.items() if s in ("answers.yaml", "tailored resume", "cover letter")))
+    tiles[2].metric("LLM drafts to review", by_source.get("LLM draft (review)", 0))
+    tiles[3].metric("Needs you", by_source.get("NEEDS YOU", 0))
+    st.dataframe(
+        [{"question": r["question"], "type": r["type"], "required": "yes" if r["required"] else "",
+          "would fill": r["answer"], "from": r["source"]} for r in rows],
+        hide_index=True, use_container_width=True,
+    )
+    for label, text in (plan.get("drafted") or {}).items():
+        st.warning(f"LLM draft for **{label}** (checked against your resume; edit before a real prefill):")
+        st.text(text)
+    if plan.get("needs_human"):
+        st.error("Before this can be prefilled:\n" + "\n".join(f"- {r}" for r in plan["needs_human"]))
+    if plan.get("wants_cover_letter"):
+        st.info("This form accepts a cover letter; a real prefill will try to write one.")
+    if plan.get("screenshot"):
+        try:
+            st.image(plan["screenshot"], caption="The form as loaded (untouched)", use_container_width=True)
+        except Exception:  # noqa: BLE001
+            pass
+    st.link_button("Open this form", plan.get("url", ""))
+
+
 def _answers_tab(d: actions.Detail) -> dict[str, str]:
     """Show filled answers; LLM drafts are highlighted and editable. Returns edits."""
     edits: dict[str, str] = {}
-    if not d.answers and not d.drafted:
-        st.info("Not prefilled yet (`jobpilot prefill`).")
+    if d.dry_run.get("rows"):
+        _dry_run_section(d)
+    elif not d.answers and not d.drafted:
+        st.info("Not prefilled yet (`jobpilot prefill`, or `jobpilot prefill --dry-run` to preview).")
     for label, value in d.answers.items():
         if label in d.drafted:
             st.warning(f"LLM-drafted — review before approving: **{label}**")
@@ -154,7 +193,14 @@ def _actions(d: actions.Detail, edits: dict[str, str]) -> None:
         actions.skip(job.id)
         st.rerun()
     c5.link_button("Open in browser (manual)", _form_url(d))
-    if job.status == "needs_human" and st.button("I applied manually — mark submitted", key=f"manual-{job.id}"):
+    from jobpilot.apply import FILLERS
+
+    # Boards without a form filler (Workable, SmartRecruiters, Recruitee) are never prefilled,
+    # so applying by hand is their only route.
+    manual_only = job.source not in FILLERS and job.status in ("scored", "tailored")
+    if (job.status == "needs_human" or manual_only) and st.button(
+        "I applied manually — mark submitted", key=f"manual-{job.id}"
+    ):
         actions.mark_applied_manually(job.id)
         st.rerun()
 
@@ -253,5 +299,145 @@ def stats_page() -> None:
     st.dataframe([{"status": k, "jobs": v} for k, v in s["by_status"].items()], hide_index=True)
 
 
-PAGES = {"Queue": queue_page, "Manual apply": manual_page, "Stats": stats_page}
+# --- Pipeline: the landing page -------------------------------------------------
+
+# (stage key, CLI command, title, what it does)
+STAGE_CARDS = (
+    ("fetch", "fetch", "1 · Fetch", "Pull every board in companies.yaml (and HN if enabled). Network only, cached 6h."),
+    ("filter", "filter", "2 · Filter", "Dedupe, title/location/age rules, visa screen (LLM only for ambiguous wording)."),
+    ("score", "score", "3 · Rank", "Embed every filtered job, LLM-rerank the top N against your resume."),
+    ("tailor", "tailor", "4 · Tailor", "One-page resume per top job, built only from your master resume."),
+    ("dry-run", "prefill", "5 · Dry-run forms", "Read each live form and plan every answer. Types and uploads nothing."),
+    ("prefill", "prefill", "6 · Prefill", "Fill forms in the browser and stop before submit. Uploads your resume."),
+)
+
+
+def _stage_args(key: str) -> list[str] | None:
+    """Options for one stage card; returns CLI args, or None if the card can't run."""
+    if key == "fetch":
+        hn = st.checkbox("Include HN Who's Hiring (slow: ~1 LLM call per comment)", key="opt-fetch-hn")
+        return ["--hn"] if hn else ["--no-hn"]
+    if key == "filter":
+        no_llm = st.checkbox("Skip the LLM visa check (ambiguous jobs become 'unclear')", key="opt-filter-nollm")
+        return ["--no-llm"] if no_llm else []
+    if key == "score":
+        top = st.number_input("LLM-rerank the top N", 5, 200, 30, 5, key="opt-score-top")
+        rescore = st.checkbox("Re-rank already ranked jobs (after editing your resume)", key="opt-score-re")
+        return ["--top", str(top), *(["--rescore"] if rescore else [])]
+    if key == "tailor":
+        top = st.number_input("Tailor the top N", 1, 100, 15, 1, key="opt-tailor-top")
+        cover = st.checkbox("Also write cover letters", key="opt-tailor-cover")
+        return ["--top", str(top), "--cover-letter" if cover else "--no-cover-letter"]
+    if key == "dry-run":
+        top = st.number_input("Dry-run the top N tailored jobs", 1, 100, 15, 1, key="opt-dry-top")
+        return ["--top", str(top), "--dry-run"]
+    if key == "prefill":
+        top = st.number_input("Prefill the top N", 1, 50, 5, 1, key="opt-prefill-top")
+        ok = st.checkbox("I understand this uploads my resume to each company's form (nothing is submitted)",
+                         key="opt-prefill-ok")
+        return ["--top", str(top), "--headless"] if ok else None
+    return []
+
+
+@st.fragment(run_every=3)
+def _live_runs() -> None:
+    from datetime import datetime, timezone
+
+    from jobpilot import runs
+
+    active = runs.refresh()
+    if not active:
+        external = runs.external_pipelines()
+        if external:
+            st.warning("A pipeline started outside the UI is running, so stages here are paused until it ends:\n"
+                       + "\n".join(f"- `{e}`" for e in external))
+        return
+    for run in active:
+        started = run.started_at if run.started_at.tzinfo else run.started_at.replace(tzinfo=timezone.utc)
+        elapsed = int((datetime.now(timezone.utc) - started).total_seconds())
+        prog = runs.llm_progress(started)
+        st.info(f"**Running: {run.stage}** (run #{run.id}) · {elapsed // 60}m {elapsed % 60:02d}s · "
+                f"{prog['calls']} LLM calls so far"
+                + (f", ~{prog['median_model_s']:.0f}s each" if prog["median_model_s"] else "")
+                + (f", {prog['errors']} failed" if prog["errors"] else ""))
+        st.code(runs.log_tail(run, 25) or "(starting...)", language=None)
+        if st.button("Stop this run", key=f"stop-{run.id}"):
+            runs.stop(run.id)
+            st.rerun()
+
+
+def pipeline_page() -> None:
+    from jobpilot import runs
+
+    st.title("Pipeline")
+    st.caption("Run each stage here and watch jobs move through it. Nothing is ever submitted from this page.")
+
+    for level, message in actions.readiness():
+        {"error": st.error, "warning": st.warning, "ok": st.success}[level](message)
+
+    data = actions.funnel()
+    counts = data["counts"]
+    for chunk in (actions.FUNNEL[:6], actions.FUNNEL[6:]):
+        cols = st.columns(len(chunk))
+        for col, (key, label) in zip(cols, chunk):
+            col.metric(label, counts.get(key, 0))
+
+    steps = actions.next_steps(counts)
+    if steps:
+        st.markdown("**Next:** " + " · ".join(why for _, why in steps))
+
+    st.subheader("Run a stage")
+    _live_runs()
+    reason = runs.busy()
+    for row in (STAGE_CARDS[:3], STAGE_CARDS[3:]):
+        cols = st.columns(3)
+        for col, (key, command, title, what) in zip(cols, row):
+            with col.container(border=True):
+                st.markdown(f"**{title}**")
+                st.caption(what)
+                args = _stage_args(key)
+                if st.button(f"Run {title.split('· ')[1].lower()}", key=f"run-{key}",
+                             disabled=bool(reason) or args is None, use_container_width=True):
+                    try:
+                        run = runs.start(command, args)
+                        st.toast(f"Started {command} (run #{run.id})")
+                    except RuntimeError as exc:
+                        st.error(str(exc))
+                    st.rerun()
+    if reason:
+        st.caption(f"Stages are paused: {reason}.")
+
+    with st.expander("Where the time goes (LLM calls, last 24h)"):
+        stats = actions.llm_stats()
+        if stats:
+            st.dataframe(stats, hide_index=True, use_container_width=True)
+            st.caption("'waiting' is time queued for a free model slot; 'model' is generation time. "
+                       "See README → Speeding it up.")
+        else:
+            st.caption("No LLM calls logged in the last 24h.")
+
+    with st.expander("Jobs by source and status"):
+        statuses = sorted({s for per in data["by_source"].values() for s in per})
+        st.dataframe(
+            [{"source": src, **{s: per.get(s, 0) for s in statuses}} for src, per in sorted(data["by_source"].items())],
+            hide_index=True, use_container_width=True,
+        )
+
+    with st.expander("Recent runs"):
+        recent = runs.recent()
+        if recent:
+            st.dataframe(
+                [{"#": r.id, "stage": r.stage, "args": " ".join(json.loads(r.args_json)), "status": r.status,
+                  "started (UTC)": r.started_at, "finished (UTC)": r.finished_at, "exit": r.exit_code}
+                 for r in recent],
+                hide_index=True, use_container_width=True,
+            )
+            pick = st.selectbox("Show log for run", [r.id for r in recent], key="log-pick")
+            chosen = next(r for r in recent if r.id == pick)
+            st.code(runs.log_tail(chosen, 80) or "(empty)", language=None)
+        else:
+            st.caption("No runs started from the UI yet.")
+
+
+PAGES = {"Pipeline": pipeline_page, "Review queue": queue_page, "Manual apply": manual_page, "Stats": stats_page}
 PAGES[st.sidebar.radio("View", list(PAGES))]()

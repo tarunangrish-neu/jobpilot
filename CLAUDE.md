@@ -68,6 +68,15 @@ How the later stages hand off (each stage only picks up what the previous one fi
 - **LLM calls** all go through `llm/client.py` (retry, schema validation, SQLite `llm_cache`,
   `logs/llm.jsonl`). Prompts live in `llm/prompts.py`; **bump a prompt's `version` whenever you
   change its text** — the version is part of the cache key.
+- **LLM concurrency** is `llm.concurrency` (default 1), enforced across processes by lock files
+  in `.cache/llm_slots/` (`llm/client.LLMSlots`). Local Ollama generates ~one reply at a time;
+  don't raise it for Ollama, and never reuse `http.concurrency` for model calls.
+- **The UI is the front door.** `jobpilot ui` opens on the Pipeline page, which starts stages via
+  `jobpilot/runs.py` (a `runs` row + `python -m jobpilot.runs <id>` worker, log in `logs/runs/`)
+  and refuses to start one while any pipeline (UI or terminal) is running. New stages need a
+  card in `ui/review_app.STAGE_CARDS` and an entry in `runs.STAGES`; never add a submit stage.
+- **Tests use `tests/fixtures/settings.test.yaml`**, not `config/settings.yaml`, so tuning your
+  own settings can't change test results.
 - **Schema changes** are applied by `db._add_missing_columns` (forward-only `ALTER TABLE ADD
   COLUMN` with the Python default as SQL default). New model fields must have a default.
 - **Submission** lives only in `apply/submit.py` and requires an `approved` event with
@@ -77,7 +86,7 @@ How the later stages hand off (each stage only picks up what the previous one fi
 ## ATS quirks that tests pin
 
 These were verified against live responses and each one silently corrupts data if it regresses.
-`tests/fixtures/` holds trimmed real payloads captured 2026-09-23.
+`tests/fixtures/` holds trimmed real payloads captured 2026-09-23 (all six boards).
 
 - **Greenhouse** returns `{"jobs": [...], "meta": {}}`. The `content` field is HTML whose angle
   brackets arrive as `&lt;`/`&gt;` entities — it must be `html.unescape`d *before* parsing or the
@@ -88,6 +97,16 @@ These were verified against live responses and each one silently corrupts data i
   `createdAt` is a millisecond epoch. `applyUrl` and `hostedUrl` are different URLs.
 - **Ashby** returns `{"jobs": [...], "apiVersion": ...}`. Postings carry `isListed`; unlisted
   ones are drafts and must be dropped at parse time. `applyUrl` differs from `jobUrl`.
+- **Workable** needs `?details=true` or jobs arrive with no description. `published_on` is a
+  bare date. Unknown tokens 404.
+- **SmartRecruiters** answers an unknown company with **200 and `totalFound: 0`**, so
+  `discover.verify` treats an empty board as not found. The list has no descriptions; the
+  adapter fetches details only for postings that pass `check_title`/`check_location`.
+- **Recruitee** tokens are subdomains. Text is split across `description` and `requirements`
+  (both kept — visa language lives in either). `published_at` is `"YYYY-MM-DD HH:MM:SS UTC"`.
+- Workable, SmartRecruiters, and Recruitee have **no form filler** (`apply.FILLERS`), so their
+  jobs never reach `prefilled` and cannot be submitted by the app; the UI offers "I applied
+  manually" instead.
 
 `jobs.remote` means "the board says this role is remote", not "remote in the US" — boards mark
 roles `Remote - Japan` and `Remote - EU` as remote too. Geography is the location filter's job.

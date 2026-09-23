@@ -232,7 +232,7 @@ def _print_ranked(limit: int) -> None:
     from .scoring.rank import ranked
 
     with db.session() as sess:
-        items = ranked(sess, limit=limit)
+        items = ranked(sess, statuses=("scored", "tailored", "prefilled", "needs_human"), limit=limit)
         rows = [
             [
                 str(i + 1),
@@ -253,12 +253,15 @@ def _print_ranked(limit: int) -> None:
 def score(
     top: int = typer.Option(0, "--top", help="How many jobs to LLM-rerank (default: scoring.embed_top_n)."),
     limit: int = typer.Option(30, "--limit", help="Rows to print."),
+    rescore: bool = typer.Option(
+        False, "--rescore", help="Re-rank already scored/tailored jobs too (after editing your resume)."
+    ),
 ) -> None:
     """Embed filtered jobs, LLM-rerank the top N, and print the ranked table."""
     from .scoring.rank import run_scoring
 
     db.init_db()
-    report = asyncio.run(run_scoring(_llm(), _resume(), top or None))
+    report = asyncio.run(run_scoring(_llm(), _resume(), top or None, rescore=rescore))
     typer.echo(
         f"candidates {report.candidates}, embedded {report.embedded}, reranked {report.reranked}"
     )
@@ -306,18 +309,39 @@ def prefill(
     top: int = typer.Option(30, "--top", help="Prefill the N highest-ranked tailored jobs."),
     job: list[int] = typer.Option(None, "--job", help="Prefill specific job id(s) instead."),
     headless: bool = typer.Option(None, "--headless/--headed", help="Override apply.headless."),
+    dry_run: bool = typer.Option(
+        False, "--dry-run",
+        help="Only read each form and record how it would be filled (shown in the UI). "
+        "Types nothing, uploads nothing, changes no job status.",
+    ),
 ) -> None:
     """Fill application forms in the browser and STOP before submitting."""
     from .apply.prefill import run_prefill
 
     db.init_db()
+    if dry_run and headless is None:
+        headless = True
     try:
         results = asyncio.run(
-            run_prefill(top=top, job_ids=job or None, llm=_llm(), resume=_resume(), headless=headless)
+            run_prefill(top=top, job_ids=job or None, llm=_llm(), resume=_resume(), headless=headless,
+                        dry_run=dry_run)
         )
     except FileNotFoundError as exc:
         typer.echo(str(exc))
         raise typer.Exit(1)
+    if dry_run:
+        rows = []
+        for r in results:
+            counts = {}
+            for row in r.dry_rows:
+                key = "you" if row["source"] == "NEEDS YOU" else ("llm" if row["source"].startswith("LLM") else
+                      ("blank" if row["source"].startswith("left") else "auto"))
+                counts[key] = counts.get(key, 0) + 1
+            rows.append([str(r.job_id), str(len(r.dry_rows)), str(counts.get("auto", 0)), str(counts.get("llm", 0)),
+                         str(counts.get("you", 0)), "; ".join(r.reasons)[:80]])
+        typer.echo(_table(rows, ["job", "fields", "auto", "llm draft", "needs you", "why"]))
+        typer.echo("\nDry run: nothing typed, uploaded, or submitted. See each job's Answers tab in `jobpilot ui`.")
+        return
     root = config.project_root()
     rows = [
         [
@@ -381,7 +405,7 @@ def run_daily(
     steps = [
         ("fetch", lambda: fetch(hn=None)),
         ("filter", lambda: filter_cmd(no_llm=False)),
-        ("score", lambda: score(top=0, limit=top)),
+        ("score", lambda: score(top=0, limit=top, rescore=False)),
         ("tailor", lambda: tailor(top=top, job=[], cover_letter=None, regenerate=False)),
     ]
     if config.settings().get("hn", {}).get("enabled", False):
