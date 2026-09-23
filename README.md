@@ -52,6 +52,9 @@ uv run jobpilot run-daily --top 30   # fetch -> filter -> score -> tailor -> pre
 uv run jobpilot ui                   # review, edit, approve & submit one at a time
 ```
 
+The `Makefile` wraps all of these (`make` lists targets; e.g. `make setup`, `make daily TOP=20`,
+`make tailor JOB=412`, `make ui`, `make test`).
+
 Or stage by stage:
 
 ```bash
