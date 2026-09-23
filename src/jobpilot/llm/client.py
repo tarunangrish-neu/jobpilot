@@ -9,17 +9,28 @@ Two backends:
   * `ollama` (default) -- local models via the ollama Python client.
   * `openai_compatible` -- Groq / Gemini / OpenRouter style chat-completions
     endpoints, reached through PoliteClient so they get rate limiting too.
+
+Throughput: a local Ollama server runs about one generation at a time, so
+sending it more requests only makes them queue -- and a queued request's
+timeout clock is already running. `LLMSlots` caps in-flight calls at
+`llm.concurrency` *across every jobpilot process* (lock files under
+.cache/llm_slots), so a request is only sent when a slot is free and the
+timeout measures model time, not waiting time. Two pipelines started at
+once now take turns instead of timing each other out.
 """
 
 from __future__ import annotations
 
 import asyncio
+import fcntl
 import hashlib
 import json
 import logging
 import os
 import time
-from typing import Any, Optional, Protocol, TypeVar
+from contextlib import asynccontextmanager
+from pathlib import Path
+from typing import Any, AsyncIterator, Optional, Protocol, TypeVar
 
 from pydantic import BaseModel, ValidationError
 
@@ -41,9 +52,53 @@ class Backend(Protocol):
     text_model: str
     embed_model: str
 
-    async def chat(self, messages: list[dict[str, str]], schema: Optional[dict]) -> str: ...
+    async def chat(
+        self,
+        messages: list[dict[str, str]],
+        schema: Optional[dict],
+        model: Optional[str] = None,
+        max_tokens: Optional[int] = None,
+    ) -> str: ...
 
     async def embed(self, texts: list[str]) -> list[list[float]]: ...
+
+
+# --- cross-process concurrency ---------------------------------------------------
+
+
+class LLMSlots:
+    """At most `n` model calls in flight across all processes sharing this project."""
+
+    def __init__(self, n: int, directory: Path) -> None:
+        self.n = max(1, n)
+        self.directory = directory
+        self._local = asyncio.Semaphore(self.n)
+
+    def _try_lock(self) -> Optional[Any]:
+        self.directory.mkdir(parents=True, exist_ok=True)
+        for i in range(self.n):
+            fh = open(self.directory / f"slot-{i}.lock", "a")
+            try:
+                fcntl.flock(fh, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                return fh
+            except BlockingIOError:
+                fh.close()
+        return None
+
+    @asynccontextmanager
+    async def slot(self) -> AsyncIterator[float]:
+        """Yields how long we waited for the slot, in seconds."""
+        started = time.monotonic()
+        async with self._local:
+            fh = self._try_lock()
+            while fh is None:
+                await asyncio.sleep(0.25)
+                fh = self._try_lock()
+            try:
+                yield time.monotonic() - started
+            finally:
+                fcntl.flock(fh, fcntl.LOCK_UN)
+                fh.close()
 
 
 # --- backends --------------------------------------------------------------
@@ -57,22 +112,30 @@ class OllamaBackend:
 
         self.text_model = cfg.get("text_model", "qwen2.5:7b-instruct")
         self.embed_model = cfg.get("embed_model", "nomic-embed-text")
+        # Keep models resident between stages; reloading qwen costs seconds per stage.
+        self.keep_alive = cfg.get("keep_alive", "30m")
+        # Ollama's default 4096-token window is too small for resume + JD + a long plan.
+        self.num_ctx = int(cfg.get("num_ctx", 8192))
         self._client = ollama.AsyncClient(
             host=os.environ.get("OLLAMA_HOST"), timeout=float(cfg.get("timeout_seconds", 120))
         )
 
-    async def chat(self, messages: list[dict[str, str]], schema: Optional[dict]) -> str:
+    async def chat(self, messages, schema, model=None, max_tokens=None) -> str:
+        options: dict[str, Any] = {"temperature": 0, "num_ctx": self.num_ctx}
+        if max_tokens:
+            options["num_predict"] = max_tokens
         resp = await self._client.chat(
-            model=self.text_model,
+            model=model or self.text_model,
             messages=messages,
             # A JSON schema constrains decoding; plain "json" is the fallback.
             format=schema or "json",
-            options={"temperature": 0},
+            options=options,
+            keep_alive=self.keep_alive,
         )
         return resp.message.content or ""
 
     async def embed(self, texts: list[str]) -> list[list[float]]:
-        resp = await self._client.embed(model=self.embed_model, input=texts)
+        resp = await self._client.embed(model=self.embed_model, input=texts, keep_alive=self.keep_alive)
         return [list(v) for v in resp.embeddings]
 
 
@@ -100,16 +163,16 @@ class OpenAICompatibleBackend:
             raise LLMError(f"{path} returned HTTP {status}: {str(body)[:300]}")
         return body
 
-    async def chat(self, messages: list[dict[str, str]], schema: Optional[dict]) -> str:
-        body = await self._post(
-            "/chat/completions",
-            {
-                "model": self.text_model,
-                "messages": messages,
-                "temperature": 0,
-                "response_format": {"type": "json_object"},
-            },
-        )
+    async def chat(self, messages, schema, model=None, max_tokens=None) -> str:
+        payload: dict[str, Any] = {
+            "model": model or self.text_model,
+            "messages": messages,
+            "temperature": 0,
+            "response_format": {"type": "json_object"},
+        }
+        if max_tokens:
+            payload["max_tokens"] = max_tokens
+        body = await self._post("/chat/completions", payload)
         return body["choices"][0]["message"]["content"] or ""
 
     async def embed(self, texts: list[str]) -> list[list[float]]:
@@ -152,7 +215,15 @@ class LLMClient:
         self.backend = backend or make_backend(cfg)
         self.max_retries = int(cfg.get("max_retries", 2))
         self.log_path = config.project_root() / cfg.get("log_path", "logs/llm.jsonl")
-        self._sem = asyncio.Semaphore(int(config.settings().get("http", {}).get("concurrency", 4)))
+        # Per-task model overrides, e.g. {visa_check: "qwen2.5:3b"}: small, fast models for
+        # classification; the default text model for scoring and tailoring.
+        self.task_models: dict[str, str] = dict(cfg.get("task_models") or {})
+        self.slots = LLMSlots(
+            int(cfg.get("concurrency", 1)), config.project_root() / ".cache" / "llm_slots"
+        )
+
+    def task_model(self, prompt: Prompt) -> str:
+        return self.task_models.get(prompt.name) or self.backend.text_model
 
     # --- logging / cache -------------------------------------------------
 
@@ -166,7 +237,7 @@ class LLMClient:
 
     def _cache_key(self, prompt: Prompt, messages: list[dict[str, str]]) -> str:
         basis = json.dumps(
-            [self.backend.name, self.backend.text_model, prompt.name, prompt.version, messages],
+            [self.backend.name, self.task_model(prompt), prompt.name, prompt.version, messages],
             sort_keys=True,
         )
         return hashlib.sha256(basis.encode()).hexdigest()
@@ -204,15 +275,19 @@ class LLMClient:
                 except ValidationError:
                     pass  # schema changed since this was cached; recompute
 
+        model = self.task_model(prompt)
         json_schema = schema.model_json_schema()
         convo = list(messages)
         last_error = ""
         for attempt in range(self.max_retries + 1):
-            started = time.monotonic()
-            raw = ""
+            raw, queued, model_s = "", 0.0, 0.0
             try:
-                async with self._sem:
-                    raw = await self.backend.chat(convo, json_schema)
+                async with self.slots.slot() as queued:
+                    started = time.monotonic()
+                    try:
+                        raw = await self.backend.chat(convo, json_schema, model=model, max_tokens=prompt.max_tokens)
+                    finally:
+                        model_s = time.monotonic() - started
                 parsed = schema.model_validate(_extract_json(raw))
             except (json.JSONDecodeError, ValidationError) as exc:
                 last_error = f"invalid output: {exc}"
@@ -234,11 +309,13 @@ class LLMClient:
                     {
                         "prompt": prompt.name,
                         "version": prompt.version,
-                        "model": self.backend.text_model,
+                        "model": model,
                         "key": key,
                         "messages": convo,
                         "response": raw,
-                        "seconds": round(time.monotonic() - started, 2),
+                        "seconds": round(queued + model_s, 2),
+                        "queued_s": round(queued, 2),
+                        "model_s": round(model_s, 2),
                     }
                 )
                 self._cache_put(key, prompt.name, parsed.model_dump_json())
@@ -247,12 +324,14 @@ class LLMClient:
                 {
                     "prompt": prompt.name,
                     "version": prompt.version,
-                    "model": self.backend.text_model,
+                    "model": model,
                     "key": key,
                     "messages": convo,
                     "response": raw,
                     "error": last_error,
                     "attempt": attempt,
+                    "queued_s": round(queued, 2),
+                    "model_s": round(model_s, 2),
                 }
             )
         raise LLMError(f"{prompt.name}: {last_error}")
@@ -273,7 +352,7 @@ class LLMClient:
         missing = list(dict(missing).items())
         for i in range(0, len(missing), batch_size):
             chunk = missing[i : i + batch_size]
-            async with self._sem:
+            async with self.slots.slot():
                 vectors = await self.backend.embed([t for _, t in chunk])
             with db.session() as sess:
                 for (key, _), vec in zip(chunk, vectors):

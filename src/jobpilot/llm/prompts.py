@@ -1,15 +1,8 @@
-"""Versioned prompt constants.
-
-Bump a prompt's `version` whenever its wording changes: the version is part
-of the LLM cache key, so stale cached answers are never served for a new
-prompt. Templates use `$name` placeholders (string.Template) because job
-descriptions are full of braces.
-"""
-
 from __future__ import annotations
 
 from dataclasses import dataclass
 from string import Template
+from typing import Optional
 
 
 @dataclass(frozen=True)
@@ -18,6 +11,8 @@ class Prompt:
     version: int
     system: str
     user: str
+    # Output cap (tokens). Generous enough for valid JSON; stops a runaway reply early.
+    max_tokens: Optional[int] = None
 
     def render(self, **variables: object) -> list[dict[str, str]]:
         return [
@@ -28,7 +23,8 @@ class Prompt:
 
 VISA_CHECK = Prompt(
     name="visa_check",
-    version=1,
+    version=2,
+    max_tokens=200,
     system="""
 You screen job descriptions for a candidate on F-1 STEM OPT. The candidate is
 authorized to work in the US today but cannot hold a security clearance and is
@@ -46,10 +42,10 @@ Classify the posting:
 your decision), or "" when the flag is "ok" and nothing is relevant.
 Reply with JSON: {"flag": "ok|unclear|blocked", "quote": "...", "reason": "..."}
 """,
+    # Only the excerpts: the verdict depends on the wording alone, and leaving the
+    # company/title out lets one cached answer cover boilerplate repeated on every
+    # posting (ServiceNow puts the same export-control paragraph on all of them).
     user="""
-Company: $company
-Title: $title
-
 Relevant excerpts from the description:
 $excerpts
 """,
@@ -59,6 +55,7 @@ $excerpts
 TAILOR = Prompt(
     name="tailor",
     version=1,
+    max_tokens=2000,
     system="""
 You tailor a resume to one job. You may ONLY select, reorder, and lightly rephrase
 content that already exists in the master resume. Never invent or alter employers,
@@ -89,6 +86,7 @@ $resume
 COVER_LETTER = Prompt(
     name="cover_letter",
     version=2,
+    max_tokens=600,
     system="""
 Write a short cover letter (3 paragraphs, at most $max_words words total) for the
 candidate below. Rules:
@@ -120,6 +118,7 @@ $resume
 DRAFT_ANSWER = Prompt(
     name="draft_answer",
     version=1,
+    max_tokens=350,
     system="""
 You draft an answer to one job-application question for the candidate below.
 Use only facts from the resume; never invent experience, numbers, tools, or
@@ -146,6 +145,7 @@ $resume
 HN_EXTRACT = Prompt(
     name="hn_extract",
     version=1,
+    max_tokens=700,
     system="""
 Extract job openings from one Hacker News "Who is hiring?" comment. A comment
 may list several roles at one company. Copy values from the text; use "" when
@@ -167,6 +167,7 @@ $comment
 OUTREACH = Prompt(
     name="outreach",
     version=1,
+    max_tokens=400,
     system="""
 Draft a short, direct outreach message (email or HN reply) from the candidate
 to the company below, at most 120 words. Every sentence about the candidate
@@ -190,6 +191,7 @@ $resume
 RERANK = Prompt(
     name="rerank",
     version=1,
+    max_tokens=400,
     system="""
 You are a technical recruiter scoring how well a candidate's resume fits a job.
 Be calibrated and strict: 90+ means an unusually strong fit on skills, domain and

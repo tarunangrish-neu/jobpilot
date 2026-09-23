@@ -44,6 +44,7 @@ class PrefillResult:
     screenshot: Optional[Path] = None
     plan: Optional[FillPlan] = None
     page: object = None  # left open when a human is needed
+    dry_rows: list[dict] = field(default_factory=list)
 
 
 def make_drafter(llm: LLMClient, resume: MasterResume, facts: ResumeFacts, job: JobInput):
@@ -85,10 +86,9 @@ def _load(top: int, job_ids: Optional[list[int]]):
         else:
             query = query.where(Job.status == "tailored").order_by(Job.final_score.desc()).limit(top)
         rows = sess.exec(query).all()
-        for row in rows:
-            for obj in row:
-                if obj is not None:
-                    sess.expunge(obj)
+        # Detach each object once: jobs at the same company share one Company instance.
+        for obj in {id(o): o for row in rows for o in row if o is not None}.values():
+            sess.expunge(obj)
         return rows
 
 
@@ -106,11 +106,35 @@ async def _ensure_cover_letter(llm, resume, facts, job_in: JobInput, app: Applic
     return path
 
 
-async def prefill_one(browser, llm, bank, resume, facts, job, company, app, url: str) -> PrefillResult:
+def dry_run_rows(fields, plan: FillPlan) -> list[dict]:
+    """One row per form question: what would go in it, and where the answer comes from."""
+    from .base import clean_label
+
+    by_field = {a.field_id: a for a in plan.actions}
+    rows = []
+    for f in fields:
+        label = clean_label(f) or f.name or f.id
+        action = by_field.get(f.id)
+        if action is not None:
+            source = {"bank": "answers.yaml", "llm": "LLM draft (review)", "resume": "tailored resume",
+                      "cover_letter": "cover letter", "review": "reviewed answer"}.get(action.source, action.source)
+            answer = Path(action.value).name if f.kind == "file" else action.value
+        elif any(label[:60] in reason for reason in plan.needs_human):
+            source, answer = "NEEDS YOU", ""
+        else:
+            source, answer = "left blank (optional)", ""
+        rows.append({"question": label, "type": f.kind, "required": f.required, "answer": answer,
+                     "source": source, "detail": action.detail if action else ""})
+    return rows
+
+
+async def prefill_one(
+    browser, llm, bank, resume, facts, job, company, app, url: str, dry_run: bool = False
+) -> PrefillResult:
     result = PrefillResult(job.id)
     job_in = JobInput(job.id, job.title, company.name if company else "", job.description_text)
     page = await browser.new_page()
-    shot = output_dir(job.id) / "prefill.png"
+    shot = output_dir(job.id) / ("dry_run.png" if dry_run else "prefill.png")
     try:
         await open_form(page, url)
         blocked = await blocker(page)
@@ -122,7 +146,8 @@ async def prefill_one(browser, llm, bank, resume, facts, job, company, app, url:
 
         if fields:
             cover = Path(app.cover_letter_path) if app.cover_letter_path else None
-            if any(f.kind == "file" and classify_file(f) == "cover_letter" for f in fields):
+            # A dry run never generates or uploads anything; it only reports the need.
+            if not dry_run and any(f.kind == "file" and classify_file(f) == "cover_letter" for f in fields):
                 cover = await _ensure_cover_letter(llm, resume, facts, job_in, app)
             threshold = float(config.settings().get("apply", {}).get("answer_match_threshold", 0.82))
             plan = await plan_fill(
@@ -131,8 +156,11 @@ async def prefill_one(browser, llm, bank, resume, facts, job, company, app, url:
             )
             result.plan = plan
             result.reasons += plan.needs_human
-            result.reasons += await execute(page, plan, fields)
-            result.reasons += await verify(page, plan, fields)
+            if dry_run:
+                result.dry_rows = dry_run_rows(fields, plan)
+            else:
+                result.reasons += await execute(page, plan, fields)
+                result.reasons += await verify(page, plan, fields)
         result.screenshot = await screenshot(page, shot)
     except Exception as exc:  # noqa: BLE001 - any browser failure is a human's job
         result.reasons.append(f"prefill error: {type(exc).__name__}: {str(exc)[:200]}")
@@ -141,12 +169,33 @@ async def prefill_one(browser, llm, bank, resume, facts, job, company, app, url:
         except Exception:  # noqa: BLE001
             pass
 
-    if result.reasons:
+    if dry_run:
+        result.status = "dry_run"
+        await page.close()
+    elif result.reasons:
         result.status = "needs_human"
         result.page = page  # leave it open, per the spec
     else:
         await page.close()
     return result
+
+
+def _record_dry_run(result: PrefillResult, app: Application, url: str) -> None:
+    """Store the plan for the UI. Job status is untouched, so nothing becomes approvable."""
+    with db.session() as sess:
+        row = sess.get(Application, app.id)
+        row.dry_run_json = json.dumps({
+            "at": utcnow().isoformat(),
+            "url": url,
+            "rows": result.dry_rows,
+            "needs_human": result.reasons,
+            "drafted": result.plan.drafted if result.plan else {},
+            "wants_cover_letter": bool(result.plan and result.plan.wants_cover_letter),
+            "screenshot": str(result.screenshot or ""),
+        })
+        sess.add(row)
+        db.log_event(sess, result.job_id, "prefill_dry_run", needs_human=len(result.reasons))
+        sess.commit()
 
 
 def _record(result: PrefillResult, app: Application) -> None:
@@ -176,6 +225,7 @@ async def run_prefill(
     headless: Optional[bool] = None,
     url_for: Optional[UrlFn] = None,
     wait_for_human: bool = True,
+    dry_run: bool = False,
 ) -> list[PrefillResult]:
     from .. import master_resume
 
@@ -188,8 +238,12 @@ async def run_prefill(
     results: list[PrefillResult] = []
     async with Browser(headless=headless) as browser:
         for job, company, app in _load(top, job_ids):
-            result = await prefill_one(browser, llm, bank, resume, facts, job, company, app, url_for(job, company))
-            _record(result, app)
+            url = url_for(job, company)
+            result = await prefill_one(browser, llm, bank, resume, facts, job, company, app, url, dry_run=dry_run)
+            if dry_run:
+                _record_dry_run(result, app, url)
+            else:
+                _record(result, app)
             results.append(result)
 
         waiting = [r for r in results if r.page is not None]

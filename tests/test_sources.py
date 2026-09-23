@@ -11,7 +11,7 @@ from datetime import timezone
 import pytest
 
 from jobpilot.models import JobPosting
-from jobpilot.sources import ashby, greenhouse, lever
+from jobpilot.sources import ashby, greenhouse, lever, recruitee, smartrecruiters, workable
 from jobpilot.sources.base import html_to_text, parse_epoch_ms, parse_iso
 
 from conftest import load
@@ -104,6 +104,121 @@ def test_ashby_uses_is_remote_flag_and_apply_url():
     assert job.apply_url
     assert job.apply_url != job.url or "application" in job.apply_url
     assert isinstance(job.remote, bool)
+
+
+# --- Workable --------------------------------------------------------------
+
+
+def test_workable_parses_details_payload():
+    postings = workable.parse(load("workable_huggingface.json"), "Hugging Face")
+
+    assert len(postings) == 3
+    job = postings[0]
+    assert job.source == "workable"
+    assert job.external_id == "F4C096B22E"  # the shortcode, which the posting URL is built on
+    # Only `?details=true` includes descriptions; an empty one means the flag was dropped.
+    assert len(job.description_text) > 200
+    assert "<p>" not in job.description_text
+
+
+def test_workable_location_apply_url_and_bare_date():
+    postings = workable.parse(load("workable_huggingface.json"), "Hugging Face")
+    ny = next(p for p in postings if "New York" in p.location)
+    assert ny.location == "New York, New York, United States"
+    assert ny.remote is True  # telecommuting
+    assert ny.apply_url.endswith("/apply") and ny.apply_url != ny.url
+    # published_on is a bare date; it must still come out as aware UTC.
+    assert ny.posted_at.utcoffset() == timezone.utc.utcoffset(None)
+
+
+# --- Recruitee -------------------------------------------------------------
+
+
+def test_recruitee_keeps_description_and_requirements():
+    payload = load("recruitee_bunq.json")
+    postings = recruitee.parse(payload, "bunq")
+
+    assert len(postings) == 3
+    job = postings[0]
+    assert job.source == "recruitee"
+    # Visa language often lives in `requirements`; dropping it blinds the visa screen.
+    requirements = html_to_text(payload["offers"][0]["requirements"])
+    assert requirements.splitlines()[0] in job.description_text
+    assert len(job.description_text) > len(html_to_text(payload["offers"][0]["description"]))
+
+
+def test_recruitee_timestamp_and_multi_location():
+    job = recruitee.parse(load("recruitee_bunq.json"), "bunq")[0]
+    # "2026-09-23 09:10:19 UTC" is not ISO-8601; a naive parser returns None.
+    assert job.posted_at is not None and job.posted_at.year == 2026
+    # Offices are ";"-separated so the location filter checks each one.
+    assert ";" in job.location
+    assert job.apply_url != job.url
+
+
+def test_recruitee_skips_unpublished_offers():
+    payload = load("recruitee_bunq.json")
+    payload["offers"][0]["status"] = "closed"
+    assert len(recruitee.parse(payload, "bunq")) == 2
+
+
+def test_parse_iso_accepts_trailing_utc():
+    assert parse_iso("2026-09-23 09:10:19 UTC").hour == 9
+
+
+# --- SmartRecruiters -------------------------------------------------------
+
+
+class _FakeClient:
+    def __init__(self, responses):
+        self.responses = responses
+        self.calls: list[str] = []
+
+    async def get_json(self, url):
+        self.calls.append(url)
+        return self.responses.get(url, (404, None))
+
+
+def _sr_client(listing=None, token="ServiceNow"):
+    listing = load("smartrecruiters_servicenow.json") if listing is None else listing
+    detail = load("smartrecruiters_servicenow_detail.json")
+    return _FakeClient({
+        smartrecruiters.PAGE_URL.format(token=token, offset=0): (200, listing),
+        smartrecruiters.DETAIL_URL.format(token=token, id=detail["id"]): (200, detail),
+    })
+
+
+def test_smartrecruiters_fetches_details_only_for_plausible_postings(temp_root):
+    import asyncio
+
+    client = _sr_client()
+    postings = asyncio.run(smartrecruiters.fetch(client, {"name": "ServiceNow", "token": "ServiceNow"}))
+
+    assert len(postings) == 3
+    detail_calls = [u for u in client.calls if "?" not in u]
+    # One of the three titles passes the rules; the finance/manager roles cost no request.
+    assert len(detail_calls) == 1
+    described = [p for p in postings if p.description_text]
+    assert [p.title for p in described] == ["Senior Software Engineer"]
+    assert len(described[0].description_text) > 500
+    assert "?oga=true" in described[0].apply_url
+
+
+def test_smartrecruiters_unknown_company_is_200_with_nothing(temp_root):
+    import asyncio
+
+    empty = {"offset": 0, "limit": 100, "totalFound": 0, "content": []}
+    client = _sr_client(listing=empty, token="Visa")
+    assert asyncio.run(smartrecruiters.fetch(client, {"name": "Visa", "token": "Visa"})) == []
+
+
+def test_smartrecruiters_parse_without_detail_still_normalizes():
+    postings = smartrecruiters.parse(load("smartrecruiters_servicenow.json"), "ServiceNow")
+    job = postings[0]
+    assert job.source == "smartrecruiters"
+    assert job.location.endswith("United States")
+    assert job.url.startswith("https://jobs.smartrecruiters.com/ServiceNow/")
+    assert job.posted_at.tzinfo is not None
 
 
 # --- Shared helpers --------------------------------------------------------

@@ -1,9 +1,3 @@
-"""Turn the LLM's tailoring plan into resume data -- selecting, never inventing.
-
-The LLM only returns ids and keys. Everything rendered is looked up in the
-master resume; rephrasings survive only if verify.py finds nothing new in them.
-"""
-
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass, field

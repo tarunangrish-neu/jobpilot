@@ -11,7 +11,7 @@ from __future__ import annotations
 import asyncio
 import json
 from collections import Counter
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Optional
 
@@ -34,6 +34,7 @@ class Detail:
     drafted: dict[str, str]
     tailoring: dict[str, Any]
     events: list[Event]
+    dry_run: dict[str, Any] = field(default_factory=dict)
 
 
 def _loads(text: Optional[str]) -> dict:
@@ -108,6 +109,7 @@ def detail(job_id: int) -> Optional[Detail]:
         drafted=_loads(app.llm_drafted_answers_json) if app else {},
         tailoring=_loads(app.tailoring_json) if app else {},
         events=events,
+        dry_run=_loads(app.dry_run_json) if app else {},
     )
 
 
@@ -218,3 +220,163 @@ def stats() -> dict[str, Any]:
         "submitted": len(apps),
         "responses": {s: by_status.get(s, 0) for s in RESPONSE_STATUSES},
     }
+
+
+# --- pipeline overview (UI-first landing page) ---------------------------------
+
+FUNNEL = (
+    ("fetched", "All jobs fetched"),
+    ("awaiting_filter", "Waiting for filter"),
+    ("filtered_out", "Dropped by filters"),
+    ("awaiting_score", "Passed filters, not ranked yet"),
+    ("scored", "Ranked"),
+    ("tailored", "Resume tailored"),
+    ("dry_run", "Form dry-run done"),
+    ("prefilled", "Prefilled, ready to review"),
+    ("needs_human", "Needs you"),
+    ("approved", "Approved"),
+    ("submitted", "Submitted"),
+)
+
+
+def funnel() -> dict[str, Any]:
+    from sqlmodel import func
+
+    with db.session() as sess:
+        by_status = Counter(dict(sess.exec(select(Job.status, func.count()).group_by(Job.status)).all()))
+        awaiting_filter = sess.exec(
+            select(func.count()).select_from(Job).where(Job.status == "new", Job.filtered_at.is_(None))
+        ).one()
+        awaiting_score = sess.exec(
+            select(func.count()).select_from(Job).where(
+                Job.status == "new", Job.filtered_at.is_not(None), Job.visa_flag != "blocked"
+            )
+        ).one()
+        dry_run = sess.exec(
+            select(func.count()).select_from(Application).where(Application.dry_run_json != "{}")
+        ).one()
+        by_source = sess.exec(select(Job.source, Job.status, func.count()).group_by(Job.source, Job.status)).all()
+    counts = {
+        "fetched": sum(by_status.values()),
+        "awaiting_filter": awaiting_filter,
+        "awaiting_score": awaiting_score,
+        "dry_run": dry_run,
+        **{s: by_status.get(s, 0) for s in ("filtered_out", "scored", "tailored", "prefilled",
+                                             "needs_human", "approved", "submitted", "skipped")},
+        **{s: by_status.get(s, 0) for s in RESPONSE_STATUSES},
+    }
+    table: dict[str, dict[str, int]] = {}
+    for source, status, n in by_source:
+        table.setdefault(source, {})[status] = n
+    return {"counts": counts, "by_source": table}
+
+
+def next_steps(counts: dict[str, int]) -> list[tuple[str, str]]:
+    """(stage, why) suggestions, in pipeline order."""
+    steps = []
+    if counts["fetched"] == 0:
+        steps.append(("fetch", "No jobs yet: fetch your boards."))
+    if counts["awaiting_filter"]:
+        steps.append(("filter", f"{counts['awaiting_filter']} jobs are waiting for the filter."))
+    if counts["awaiting_score"]:
+        steps.append(("score", f"{counts['awaiting_score']} jobs passed the filters but aren't ranked."))
+    if counts["scored"]:
+        steps.append(("tailor", f"{counts['scored']} ranked jobs have no tailored resume yet."))
+    if counts["tailored"] > counts["dry_run"]:
+        steps.append(("dry-run", "Preview how the tailored jobs' forms would be filled."))
+    if counts["prefilled"]:
+        steps.append(("review", f"{counts['prefilled']} prefilled applications are waiting for your review."))
+    return steps
+
+
+def readiness() -> list[tuple[str, str]]:
+    """(level, message) checks shown on the Pipeline page. level: error | warning | ok."""
+    import shutil
+    import subprocess
+
+    import yaml
+
+    root = config.project_root()
+    out: list[tuple[str, str]] = []
+    resume, example = root / "data" / "master_resume.yaml", root / "config" / "master_resume.example.yaml"
+    if not resume.exists():
+        out.append(("error", "data/master_resume.yaml is missing (run `jobpilot init`)."))
+    elif example.exists() and resume.read_bytes() == example.read_bytes():
+        out.append(("error", "data/master_resume.yaml is still the fictional example; replace it with your resume."))
+
+    answers_path = root / "config" / "answers.yaml"
+    try:
+        answers = yaml.safe_load(answers_path.read_text(encoding="utf-8")) or {}
+    except OSError:
+        answers = {}
+        out.append(("error", "config/answers.yaml is missing (run `jobpilot init`)."))
+    wanted = {
+        "contact": ("first_name", "last_name", "email", "phone", "linkedin"),
+        "work_authorization": ("authorized_to_work_in_us", "require_sponsorship_now_or_future"),
+    }
+    blank = [f"{sec}.{k}" for sec, keys in wanted.items() for k in keys if not (answers.get(sec) or {}).get(k)]
+    if answers and blank:
+        out.append(("warning", "answers.yaml is blank for " + ", ".join(blank)
+                    + " -- forms asking for these will be flagged 'needs you' instead of filled."))
+
+    llm_cfg = config.settings().get("llm", {})
+    if llm_cfg.get("provider", "ollama") == "ollama":
+        try:
+            listing = subprocess.run(["ollama", "list"], capture_output=True, text=True, timeout=5)
+            have = {line.split()[0] for line in listing.stdout.splitlines()[1:] if line.strip()}
+            names = have | {n.removesuffix(":latest") for n in have}
+            needed = {llm_cfg.get("text_model"), llm_cfg.get("embed_model"), *(llm_cfg.get("task_models") or {}).values()}
+            missing = sorted(m for m in needed if m and m not in names)
+            if listing.returncode != 0:
+                out.append(("error", "Ollama isn't running (`brew services start ollama` or `make ollama-up`)."))
+            elif missing:
+                out.append(("error", "Ollama models not pulled: " + ", ".join(missing) + " (`make models`)."))
+        except (OSError, subprocess.SubprocessError):
+            out.append(("error", "Ollama isn't installed or didn't answer (`brew install ollama`)."))
+    if not shutil.which("typst"):
+        out.append(("error", "typst isn't installed, so resumes can't be rendered (`brew install typst`)."))
+    if not out:
+        out.append(("ok", "Resume, answers, models, and typst all look ready."))
+    return out
+
+
+def llm_stats(hours: int = 24) -> list[dict[str, Any]]:
+    """Per-prompt call counts and time split (waiting vs model) over the last `hours`."""
+    from datetime import datetime, timedelta, timezone
+
+    path = config.project_root() / config.settings().get("llm", {}).get("log_path", "logs/llm.jsonl")
+    since = datetime.now(timezone.utc) - timedelta(hours=hours)
+    rows: dict[str, dict[str, list]] = {}
+    try:
+        with path.open(encoding="utf-8") as fh:
+            for line in fh:
+                try:
+                    rec = json.loads(line)
+                    ts = datetime.fromisoformat(rec["ts"])
+                except (ValueError, KeyError):
+                    continue
+                if ts.tzinfo is None:
+                    ts = ts.replace(tzinfo=timezone.utc)
+                if ts < since:
+                    continue
+                r = rows.setdefault(rec.get("prompt", "?"), {"total": [], "model": [], "queued": [], "errors": []})
+                if "error" in rec:
+                    r["errors"].append(1)
+                    continue
+                r["total"].append(float(rec.get("seconds") or 0))
+                if "model_s" in rec:
+                    r["model"].append(float(rec["model_s"]))
+                    r["queued"].append(float(rec.get("queued_s") or 0))
+    except OSError:
+        return []
+
+    def median(xs):
+        xs = sorted(xs)
+        return round(xs[len(xs) // 2], 1) if xs else None
+
+    return [
+        {"prompt": name, "calls": len(r["total"]), "failed": len(r["errors"]),
+         "median total s": median(r["total"]), "median model s": median(r["model"]),
+         "median waiting s": median(r["queued"]), "model minutes": round(sum(r["model"] or r["total"]) / 60, 1)}
+        for name, r in sorted(rows.items(), key=lambda kv: -len(kv[1]["total"]))
+    ]

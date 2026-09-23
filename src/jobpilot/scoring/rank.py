@@ -1,12 +1,3 @@
-"""Score stage: embed every filtered job, LLM-rerank the top N, combine.
-
-final_score = w_embed * (cosine * 100) + w_llm * llm_score (+ lca_boost)
-
-Only the top N by embedding similarity reach the LLM and become `scored`;
-the rest keep their `embed_score` and stay `new`, so a later run (after the
-top jobs move on) can still pick them up.
-"""
-
 from __future__ import annotations
 
 import asyncio
@@ -25,8 +16,6 @@ from ..models import Company, Job
 from .embed import embed_scores
 
 MAX_JD_CHARS = 6000
-
-
 class RerankResult(BaseModel):
     score: float = Field(ge=0, le=100)
     reasons: list[str] = Field(default_factory=list)
@@ -59,18 +48,24 @@ def final_score(
     return round(total, 2)
 
 
+# Statuses whose scores `--rescore` recomputes (e.g. after the master resume changes).
+# Later stages keep their status; only the numbers move.
+RESCORABLE = ("new", "scored", "tailored", "prefilled", "needs_human")
+
+
 async def run_scoring(
-    llm: LLMClient, resume: MasterResume, top_n: Optional[int] = None
+    llm: LLMClient, resume: MasterResume, top_n: Optional[int] = None, rescore: bool = False
 ) -> ScoreReport:
     cfg = config.settings().get("scoring", {})
     top_n = int(top_n or cfg.get("embed_top_n", 60))
     report = ScoreReport()
+    statuses = RESCORABLE if rescore else ("new",)
 
     with db.session() as sess:
         rows = sess.exec(
             select(Job, Company)
             .join(Company, Job.company_id == Company.id, isouter=True)
-            .where(Job.status == "new", Job.filtered_at.is_not(None), Job.visa_flag != "blocked")
+            .where(Job.status.in_(statuses), Job.filtered_at.is_not(None), Job.visa_flag != "blocked")
         ).all()
         items = [
             (
@@ -116,6 +111,11 @@ async def run_scoring(
         for job_id, sim in sims.items():
             job = sess.get(Job, job_id)
             job.embed_score = round(sim, 4)
+            if rescore and job_id not in results:
+                # Out of the new top N: an LLM score from the old resume would mislead.
+                job.llm_score, job.final_score, job.llm_reason, job.llm_details_json = None, None, "", "{}"
+                if job.status == "scored":
+                    db.set_status(sess, job, "new", reason="rescored: below top N")
             sess.add(job)
         for job_id, result in results.items():
             job = sess.get(Job, job_id)
@@ -126,7 +126,10 @@ async def run_scoring(
             job.llm_reason = result.reasons[0] if result.reasons else ""
             job.llm_details_json = result.model_dump_json(exclude={"score"})
             job.final_score = final_score(job.embed_score, result.score, lca[job_id], cfg)
-            db.set_status(sess, job, "scored")
+            if job.status == "new":
+                db.set_status(sess, job, "scored")
+            else:
+                sess.add(job)
             report.reranked += 1
         sess.commit()
     return report

@@ -2,20 +2,25 @@
 #
 # Format:
 #   - name:   Display name shown in the UI and used for LCA fuzzy-matching.
-#     ats:    greenhouse | lever | ashby
+#     ats:    greenhouse | lever | ashby | workable | smartrecruiters | recruitee
 #     token:  The board token in the ATS URL, NOT the company's domain.
-#               greenhouse  boards.greenhouse.io/<token>        -> token
-#               lever       jobs.lever.co/<token>               -> token
-#               ashby       jobs.ashbyhq.com/<token>            -> token
+#               greenhouse       boards.greenhouse.io/<token>        -> token
+#               lever            jobs.lever.co/<token>               -> token
+#               ashby            jobs.ashbyhq.com/<token>            -> token
+#               workable         apply.workable.com/<token>          -> token
+#               smartrecruiters  jobs.smartrecruiters.com/<token>    -> token
+#               recruitee        <token>.recruitee.com               -> token
+#             Workable, SmartRecruiters, and Recruitee jobs are tailored but never
+#             prefilled: open the posting from the review UI and apply by hand.
 #     active: Optional, defaults to true. Set false to skip without deleting.
 #
 # Find a token for any careers page with:
 #     uv run jobpilot discover-token https://example.com/careers
 #
-# The entries below are verified-working placeholders so `fetch` runs out of the box.
-# Replace them with your own stablecoin/payments infra, crypto infra, AI infra, and fintech list.
+# Every entry was verified live (2026-09-23) to return open roles.
 
 companies:
+  # --- original seed list ------------------------------------------------------
   - name: Stripe
     ats: greenhouse
     token: stripe
@@ -40,3 +45,177 @@ companies:
   - name: Ashby
     ats: ashby
     token: ashby
+
+  # --- fintech / payments ------------------------------------------------------
+  - name: Plaid
+    ats: ashby
+    token: plaid
+  - name: Brex
+    ats: greenhouse
+    token: brex
+  - name: Mercury
+    ats: greenhouse
+    token: mercury
+  - name: Chime
+    ats: greenhouse
+    token: chime
+  - name: Affirm
+    ats: greenhouse
+    token: affirm
+  - name: Robinhood
+    ats: greenhouse
+    token: robinhood
+  - name: Marqeta
+    ats: ashby
+    token: marqeta-inc
+  - name: Modern Treasury
+    ats: ashby
+    token: moderntreasury
+  - name: Unit
+    ats: ashby
+    token: unit
+  - name: Lithic
+    ats: greenhouse
+    token: lithic
+  - name: Column
+    ats: ashby
+    token: column
+  - name: Airwallex
+    ats: ashby
+    token: airwallex
+  - name: Checkout.com
+    ats: ashby
+    token: checkout.com
+  - name: Adyen
+    ats: greenhouse
+    token: adyen
+  - name: Nubank
+    ats: ashby
+    token: nubank
+  - name: SoFi
+    ats: greenhouse
+    token: sofi
+  - name: Carta
+    ats: greenhouse
+    token: carta
+
+  # --- crypto / stablecoin -----------------------------------------------------
+  - name: Coinbase
+    ats: greenhouse
+    token: coinbase
+  - name: Circle
+    ats: ashby
+    token: circle
+  - name: Anchorage Digital
+    ats: lever
+    token: anchorage
+  - name: Fireblocks
+    ats: greenhouse
+    token: fireblocks
+  - name: Kraken
+    ats: ashby
+    token: kraken.com
+  - name: Gemini
+    ats: greenhouse
+    token: gemini
+  - name: Paxos
+    ats: ashby
+    token: paxos
+  - name: Alchemy
+    ats: ashby
+    token: alchemy
+
+  # --- AI infra ----------------------------------------------------------------
+  - name: Anthropic
+    ats: greenhouse
+    token: anthropic
+  - name: Scale AI
+    ats: greenhouse
+    token: scaleai
+  - name: Cohere
+    ats: ashby
+    token: cohere
+  - name: Pinecone
+    ats: ashby
+    token: pinecone
+  - name: Weaviate
+    ats: ashby
+    token: weaviate
+  - name: Modal
+    ats: ashby
+    token: modal
+  - name: Anyscale
+    ats: ashby
+    token: anyscale
+  - name: Together AI
+    ats: greenhouse
+    token: togetherai
+  - name: Fireworks AI
+    ats: ashby
+    token: fireworks
+  - name: Baseten
+    ats: ashby
+    token: baseten
+  - name: LangChain
+    ats: ashby
+    token: langchain
+
+  # --- dev infra ---------------------------------------------------------------
+  - name: Replit
+    ats: ashby
+    token: replit
+  - name: Vercel
+    ats: greenhouse
+    token: vercel
+  - name: Temporal
+    ats: ashby
+    token: temporal
+  - name: Cockroach Labs
+    ats: greenhouse
+    token: cockroachlabs
+  - name: Confluent
+    ats: ashby
+    token: confluent
+  - name: Datadog
+    ats: greenhouse
+    token: datadog
+  - name: MongoDB
+    ats: greenhouse
+    token: mongodb
+  - name: Figma
+    ats: greenhouse
+    token: figma
+  - name: Notion
+    ats: ashby
+    token: notion
+  - name: Airtable
+    ats: greenhouse
+    token: airtable
+  - name: Cloudflare
+    ats: greenhouse
+    token: cloudflare
+  - name: Twilio
+    ats: greenhouse
+    token: twilio
+
+  # --- smartrecruiters --------------------------------------------
+  - name: ServiceNow
+    ats: smartrecruiters
+    token: ServiceNow
+  - name: Experian
+    ats: smartrecruiters
+    token: Experian
+  - name: Wise
+    ats: smartrecruiters
+    token: Wise
+  - name: NielsenIQ
+    ats: smartrecruiters
+    token: NielsenIQ
+  - name: Canva
+    ats: smartrecruiters
+    token: Canva
+
+  # --- workable ----------------------------------------------------------------
+  - name: Hugging Face
+    ats: workable
+    token: huggingface

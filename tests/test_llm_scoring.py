@@ -144,3 +144,64 @@ def test_score_stage_reranks_only_top_n(fake_llm, temp_root):
         assert order == ["a", "b"]
         assert ranked(sess)[0].details["missing_skills"] == ["Scala"]
         assert ranked(sess)[0].details["seniority_fit"] == "match"
+
+
+def test_slots_serialize_calls_and_timeout_excludes_waiting(fake_llm, temp_root):
+    """concurrency=1: the second call waits for a free slot; only model time is 'model_s'."""
+    from jobpilot.llm.prompts import Prompt
+
+    running, peak = 0, 0
+
+    async def slow_chat(messages, schema, model=None, max_tokens=None):
+        nonlocal running, peak
+        running += 1
+        peak = max(peak, running)
+        await asyncio.sleep(0.3)
+        running -= 1
+        return '{"value": 1}'
+
+    fake_llm.fake.chat = slow_chat
+
+    async def both():
+        await asyncio.gather(
+            fake_llm.complete_json(Prompt("t", 1, "s", "a"), Answer),
+            fake_llm.complete_json(Prompt("t", 1, "s", "b"), Answer),
+        )
+
+    asyncio.run(both())
+    assert peak == 1
+    records = [json.loads(line) for line in (temp_root / "logs" / "llm.jsonl").read_text().splitlines()]
+    waited = max(r["queued_s"] for r in records)
+    assert waited >= 0.25 and all(r["model_s"] < 0.6 for r in records)
+
+
+def test_slots_are_shared_across_clients(temp_root):
+    """Two LLMClients (standing in for two processes) share the lock-file slots."""
+    from jobpilot.llm.client import LLMSlots
+
+    a = LLMSlots(1, temp_root / ".cache" / "llm_slots")
+    b = LLMSlots(1, temp_root / ".cache" / "llm_slots")
+    order = []
+
+    async def hold(s, name):
+        async with s.slot():
+            order.append(f"{name}+")
+            await asyncio.sleep(0.2)
+            order.append(f"{name}-")
+
+    async def both():
+        await asyncio.gather(hold(a, "a"), hold(b, "b"))
+
+    asyncio.run(both())
+    assert order in (["a+", "a-", "b+", "b-"], ["b+", "b-", "a+", "a-"])
+
+
+def test_task_model_routing_and_output_cap(fake_llm):
+    from jobpilot.llm.prompts import VISA_CHECK
+    from jobpilot.filters.visa import VisaVerdict
+
+    fake_llm.task_models = {"visa_check": "small-model"}
+    fake_llm.fake.reply = lambda m: '{"flag": "ok", "quote": "", "reason": "fine"}'
+    asyncio.run(fake_llm.complete_json(VISA_CHECK, VisaVerdict, excerpts="- nothing"))
+    assert fake_llm.fake.last_model == "small-model"
+    assert fake_llm.fake.last_max_tokens == VISA_CHECK.max_tokens == 200

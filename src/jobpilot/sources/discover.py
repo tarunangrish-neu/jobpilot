@@ -1,19 +1,10 @@
-"""Detect which ATS a careers page uses and what its board token is.
-
-Used by `jobpilot discover-token <careers_url>` to grow companies.yaml
-quickly. Works in two passes: scrape the page for a board URL, and if that
-finds nothing (common on JS-rendered pages), guess tokens from the domain
-name. Every candidate is confirmed with a real API call before being
-reported, so a returned token is always one that actually works.
-"""
-
 from __future__ import annotations
 
 import re
 from typing import Any, Optional
 from urllib.parse import urlparse
 
-from . import ashby, greenhouse, lever
+from . import ashby, greenhouse, lever, recruitee, smartrecruiters, workable
 
 # Board URL shapes seen in careers-page markup, embed scripts, and iframes.
 PATTERNS: list[tuple[str, re.Pattern[str]]] = [
@@ -24,12 +15,24 @@ PATTERNS: list[tuple[str, re.Pattern[str]]] = [
     ("lever", re.compile(r"api\.lever\.co/v0/postings/([a-z0-9_-]+)", re.I)),
     ("ashby", re.compile(r"jobs\.ashbyhq\.com/([a-z0-9_.-]+)", re.I)),
     ("ashby", re.compile(r"api\.ashbyhq\.com/posting-api/job-board/([a-z0-9_.-]+)", re.I)),
+    ("workable", re.compile(r"apply\.workable\.com/(?:api/v\d/widget/accounts/)?([a-z0-9_-]+)", re.I)),
+    ("workable", re.compile(r"([a-z0-9-]+)\.workable\.com", re.I)),
+    ("smartrecruiters", re.compile(r"(?:careers|jobs)\.smartrecruiters\.com/([a-z0-9_-]+)", re.I)),
+    ("smartrecruiters", re.compile(r"api\.smartrecruiters\.com/v1/companies/([a-z0-9_-]+)", re.I)),
+    ("recruitee", re.compile(r"([a-z0-9-]+)\.recruitee\.com", re.I)),
 ]
 
 # Words that appear in board URLs but are never tokens.
-_NOT_TOKENS = {"embed", "job_board", "jobs", "careers", "search", "v1", "v0", "boards"}
+_NOT_TOKENS = {"embed", "job_board", "jobs", "careers", "search", "v1", "v0", "boards", "api", "j", "apply", "www"}
 
-_ADAPTERS = {"greenhouse": greenhouse, "lever": lever, "ashby": ashby}
+_ADAPTERS = {
+    "greenhouse": greenhouse,
+    "lever": lever,
+    "ashby": ashby,
+    "workable": workable,
+    "smartrecruiters": smartrecruiters,
+    "recruitee": recruitee,
+}
 
 
 def candidates_from_html(body: str) -> list[tuple[str, str]]:
@@ -80,7 +83,11 @@ async def verify(client, ats: str, token: str) -> Optional[int]:
     status, payload = await client.get_json(adapter.BOARD_URL.format(token=token))
     if status != 200 or payload is None:
         return None
-    return len(adapter.parse(payload, token))
+    count = len(adapter.parse(payload, token))
+    # SmartRecruiters answers 200 with zero postings for companies that do not exist.
+    if ats == "smartrecruiters" and count == 0:
+        return None
+    return count
 
 
 async def discover(client, careers_url: str) -> list[dict[str, Any]]:
@@ -92,7 +99,7 @@ async def discover(client, careers_url: str) -> list[dict[str, Any]]:
         candidates = [
             (ats, guess)
             for guess in guess_from_domain(careers_url)
-            for ats in ("greenhouse", "lever", "ashby")
+            for ats in _ADAPTERS
         ]
 
     results: list[dict[str, Any]] = []

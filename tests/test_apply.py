@@ -195,7 +195,7 @@ def test_prefill_fills_everything_and_does_not_submit(apply_root, fake_llm, monk
             " autofill: document.querySelector('[name=autofill]').files.length, why: $('why').value}; }"
         )
 
-    async def inspect_before_close(browser, *args):
+    async def inspect_before_close(browser, *args, **kwargs):
         make_page = browser.new_page
 
         async def tracked_page():
@@ -210,7 +210,7 @@ def test_prefill_fills_everything_and_does_not_submit(apply_root, fake_llm, monk
             return page
 
         browser.new_page = tracked_page
-        result = await original(browser, *args)
+        result = await original(browser, *args, **kwargs)
         await inspect(seen["page"])  # needs_human leaves the page open
         return result
 
@@ -312,3 +312,69 @@ def test_only_prefilled_jobs_can_be_approved(apply_root, fake_llm):
     job_id = _tailored_job(apply_root)
     with db.session() as sess, pytest.raises(SubmitRefused):
         approve(sess, sess.get(Job, job_id))
+
+
+def test_dry_run_touches_nothing_and_records_the_plan(apply_root, fake_llm, monkeypatch):
+    from jobpilot import db
+    from jobpilot.apply import prefill as prefill_mod
+    from jobpilot.models import Job
+
+    job_id = _tailored_job(apply_root)
+    seen = {}
+    original = prefill_mod.prefill_one
+
+    async def capture(browser, *args, **kwargs):
+        make_page = browser.new_page
+
+        async def tracked_page():
+            page = await make_page()
+            real_close = page.close
+
+            async def close_after_inspection():
+                seen["form"] = await page.evaluate(
+                    "() => ({name: document.getElementById('name').value,"
+                    " resume: document.getElementById('resume').files.length, submitted: window.__submitted})"
+                )
+                await real_close()
+
+            page.close = close_after_inspection
+            return page
+
+        browser.new_page = tracked_page
+        return await original(browser, *args, **kwargs)
+
+    monkeypatch.setattr(prefill_mod, "prefill_one", capture)
+    [result] = run(prefill_mod.run_prefill(
+        job_ids=[job_id], llm=fake_llm, resume=_resume(), headless=True, url_for=lambda j, c: FORM_URL,
+        wait_for_human=False, dry_run=True,
+    ))
+    assert seen["form"] == {"name": "", "resume": 0, "submitted": False}  # nothing typed or attached
+    with db.session() as sess:
+        assert sess.get(Job, job_id).status == "tailored"  # nothing becomes approvable
+        plan = json.loads(_app(sess, job_id).dry_run_json)
+    by_q = {r["question"]: r for r in plan["rows"]}
+    assert by_q["Full name"]["answer"] == "Alex Example" and by_q["Full name"]["source"] == "answers.yaml"
+    assert by_q["Resume/CV"]["source"] == "tailored resume"
+    assert by_q["Why do you want to work at Acme?"]["source"] == "LLM draft (review)"
+    assert by_q["Are you authorized to work in the U.S. without company sponsorship?"]["source"] == "NEEDS YOU"
+    assert Path(plan["screenshot"]).exists()
+
+
+def test_prefill_loads_several_jobs_at_one_company(apply_root):
+    """Regression: two jobs sharing a Company made _load detach it twice and crash."""
+    from sqlmodel import select
+
+    from jobpilot import db
+    from jobpilot.apply.prefill import _load
+    from jobpilot.models import Application, Job, JobPosting
+
+    with db.session() as sess:
+        db.sync_companies(sess, [{"name": "Acme", "ats": "lever", "token": "acme"}])
+        for ext in ("x", "y"):
+            db.upsert_posting(sess, JobPosting(source="lever", external_id=ext, company_name="Acme", title="Backend"), 1)
+        for job in sess.exec(select(Job)).all():
+            job.status, job.final_score = "tailored", 50.0
+            sess.add(Application(job_id=job.id, resume_path="r.pdf"))
+        sess.commit()
+    rows = _load(10, None)
+    assert len(rows) == 2 and rows[0][1].name == rows[1][1].name == "Acme"

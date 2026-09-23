@@ -1,0 +1,137 @@
+{
+ "id": "744000151138619",
+ "name": "Senior Software Engineer",
+ "uuid": "a7bb30be-7d6b-417f-b46a-36e03df9dd71",
+ "jobId": "76d8d802-5fd8-428e-97cd-5aba18dc2524",
+ "jobAdId": "8dfca1d8-4265-419d-a302-1f9ddbc03660",
+ "defaultJobAd": true,
+ "refNumber": "JB0075015",
+ "company": {
+  "name": "ServiceNow",
+  "identifier": "ServiceNow"
+ },
+ "location": {
+  "city": "Santa Clara",
+  "region": "CALIFORNIA",
+  "country": "us",
+  "address": "2225 Lawson Lane",
+  "postalCode": "95054",
+  "remote": false,
+  "hybrid": true,
+  "hybridDescription": "Hybrid Requires 2 days per week in the office",
+  "fullLocation": "Santa Clara, CALIFORNIA, United States"
+ },
+ "customField": [
+  {
+   "fieldId": "60345fa28b4ba8595bef1863",
+   "fieldLabel": "Recruiting Team",
+   "valueId": "professional",
+   "valueLabel": "Professional"
+  },
+  {
+   "fieldId": "60345e1a0b24a127cbdfa148",
+   "fieldLabel": "Employee Type",
+   "valueId": "0082f6cbe6154da19322cbab1f6aa5af",
+   "valueLabel": "Regular"
+  },
+  {
+   "fieldId": "5f63a78f1dae5c5c4e54ba2b",
+   "fieldLabel": "Department",
+   "valueId": "2294038",
+   "valueLabel": "Engineering, Infrastructure and Operations"
+  },
+  {
+   "fieldId": "COUNTRY",
+   "fieldLabel": "Country/Region",
+   "valueId": "us",
+   "valueLabel": "United States"
+  },
+  {
+   "fieldId": "5f63a78f1dae5c5c4e54ba2a",
+   "fieldLabel": "Brands",
+   "valueId": "default",
+   "valueLabel": "ServiceNow"
+  },
+  {
+   "fieldId": "60345d5c5165a31b17288279",
+   "fieldLabel": "Region",
+   "valueId": "722a833b93e4437798309f43c0d25990",
+   "valueLabel": "AMS - North America and Canada"
+  },
+  {
+   "fieldId": "603462175165a31b1728827d",
+   "fieldLabel": "Cost Center",
+   "valueId": "CC6020",
+   "valueLabel": "6020 FSC Engineering"
+  },
+  {
+   "fieldId": "6034601b43915a29a4b3389b",
+   "fieldLabel": "Job Location",
+   "valueId": "L_SJC005",
+   "valueLabel": "2225 Lawson Lane, Santa Clara, California, 95054, United States of America(L_SJC005)"
+  },
+  {
+   "fieldId": "618ed92b8f5e5f110e5bfb95",
+   "fieldLabel": "Work Persona",
+   "valueId": "bf7551c6-9b06-4e7c-8217-3baf43edd060",
+   "valueLabel": "Flexible"
+  },
+  {
+   "fieldId": "690cc0e8c682c3dbadaa7d73",
+   "fieldLabel": "Job Posting Type",
+   "valueId": "professional",
+   "valueLabel": "Professional"
+  }
+ ],
+ "releasedDate": "2026-09-22T21:39:47.478Z",
+ "postingUrl": "https://jobs.smartrecruiters.com/ServiceNow/744000151138619-senior-software-engineer",
+ "applyUrl": "https://jobs.smartrecruiters.com/ServiceNow/744000151138619-senior-software-engineer?oga=true",
+ "referralUrl": "https://jobs.smartrecruiters.com/external-referrals/company/ServiceNow/publication/a7bb30be-7d6b-417f-b46a-36e03df9dd71?dcr_ci=ServiceNow",
+ "jobAd": {
+  "sections": {
+   "companyDescription": {
+    "title": "Company Description",
+    "text": "<p>It all started when engineer Fred Luddy wrote code that automated a tedious task for his coworker, Phyllis. She cried tears of joy. That moment inspired Fred to build a company that could do that for everyone—freeing people from busywork so they could focus on meaningful work. Today, ServiceNow is the AI control tower for business reinvention. Our ServiceNow AI platform brings together any AI, any data, and any workflow— helping 85% of the Fortune 500® work smarter, faster, and better. We're building an AI-native culture where technology and talent are unstoppable together. And we're just getting started.</p><p>Join us to put AI to work for people.</p><p>&#xa0;</p>"
+   },
+   "jobDescription": {
+    "title": "Job Description",
+    "text": "<p>We are seeking a <strong>Senior Software Engineer</strong>.&#xa0; This is a mid-level engineer position who independently designs, builds, tests, and maintains cloud-native and AI-native software components with limited supervision. The IC3 engineer takes ownership of medium-complexity features or components, works across the full development lifecycle from design through production support, and begins to mentor junior engineers. They combine solid software engineering fundamentals with growing expertise in AI/ML integration, ServiceNow platform development, and production systems. This role requires the ability to balance technical depth with broader team needs, communicate clearly with teammates and customers, and take initiative in improving code quality and product reliability.</p><p><u><strong>What you get to do in this role:</strong></u></p><p><strong>Responsibility Area: Software Development &amp; Feature Ownership</strong><br>\n• &#xa0; &#xa0;Design, develop, test, and maintain AI-native software features and backend services with limited supervision<br>\n• &#xa0; &#xa0;Take full ownership of medium-complexity features from design through deployment and production support<br>\n• &#xa0; &#xa0;Contribute to technical specifications, implementation plans, prompt design, agent logic, and retrieval workflows<br>\n• &#xa0; &#xa0;Build comprehensive unit tests, integration tests, and basic evaluation checks for AI features<br>\n• &#xa0; &#xa0;Troubleshoot software defects, integration issues, and AI behavior problems in development and production environments<br>\n• &#xa0; &#xa0;Follow secure coding practices, including responsible handling of prompts, customer data, privacy, and AI safety guardrails<br>\n• &#xa0; &#xa0;Work with cloud services, APIs, containers, and CI/CD pipelines to support reliable delivery of software<br>\n• &#xa0; &#xa0;Proactively identify and fix technical debt in code you maintain; suggest improvements to teammates</p><p><strong>Responsibility Area: ServiceNow Platform Development</strong><br>\n• &#xa0; &#xa0;Design and develop features and customizations on the ServiceNow platform independently<br>\n• &#xa0; &#xa0;Architect ServiceNow workflows, business rules, and automations; implement client and server-side JavaScript/GlideScript<br>\n• &#xa0; &#xa0;Design data models, forms, dashboards, and reports for ServiceNow applications; optimize database queries<br>\n• &#xa0; &#xa0;Integrate third-party AI/ML services and custom APIs with ServiceNow; build REST integrations and webhooks<br>\n• &#xa0; &#xa0;Maintain and extend ServiceNow plugins and apps; follow platform best practices and architectural patterns<br>\n• &#xa0; &#xa0;Participate in ServiceNow platform upgrades and manage feature compatibility with platform updates<br>\n• &#xa0; &#xa0;Support customer implementations and provide guidance on ServiceNow platform capabilities and configuration</p><p><strong>Responsibility Area: Communication &amp; Collaboration</strong><br>\n• &#xa0; &#xa0;Communicate clearly with team members, stakeholders, and cross-functional partners on technical topics<br>\n• &#xa0; &#xa0;Provide regular updates on assigned work, risks, blockers, and delivery progress<br>\n• &#xa0; &#xa0;Explain technical choices, implementation trade-offs, and AI limitations to technical and non-technical audiences<br>\n• &#xa0; &#xa0;Participate actively in design discussions, code reviews, sprint planning, and retrospectives<br>\n• &#xa0; &#xa0;Share knowledge with junior engineers through pair programming, code reviews, and informal mentoring<br>\n• &#xa0; &#xa0;Work collaboratively with product, design, and other engineering teams; seek alignment on requirements<br>\n• &#xa0; &#xa0;Communicate proactively about challenges and escalate issues appropriately</p><p><strong>Responsibility Area: Technical Ownership &amp; Quality</strong><br>\n• &#xa0; &#xa0;Own medium-complexity features or components from design through delivery and production support<br>\n• &#xa0; &#xa0;Review code from peers and provide practical feedback on maintainability, correctness, and test coverage<br>\n• &#xa0; &#xa0;Support root cause analysis for customer-reported issues, including defects involving retrieval quality or model output behavior<br>\n• &#xa0; &#xa0;Mentor junior engineers informally by sharing implementation guidance, debugging approaches, and good engineering practices<br>\n• &#xa0; &#xa0;Participate in on-call support for assigned components; respond to production issues and customer escalations<br>\n• &#xa0; &#xa0;Drive improvements to development tools, testing infrastructure, and deployment processes in your areas<br>\n• &#xa0; &#xa0;Learn from production incidents and help establish practices to prevent recurrence</p><p><strong>Responsibility Area: Customer Support &amp; Success</strong><br>\n• &#xa0; &#xa0;Engage with customers to understand and resolve complex technical issues<br>\n• &#xa0; &#xa0;Participate in customer issue triage, investigation, and root cause analysis<br>\n• &#xa0; &#xa0;Provide technical guidance to customers on application usage, configuration, and troubleshooting<br>\n• &#xa0; &#xa0;Contribute to customer documentation, knowledge bases, and internal runbooks<br>\n• &#xa0; &#xa0;Support critical customer escalations; own investigation and resolution of assigned issues<br>\n• &#xa0; &#xa0;Gather customer feedback and communicate product improvement opportunities to product management<br>\n• &#xa0; &#xa0;Help identify patterns in customer issues that could prevent future problems</p>"
+   },
+   "qualifications": {
+    "title": "Qualifications",
+    "text": "<p><strong><u>To be successful in this role you have:</u></strong></p><ul><li>5+ years of software development experience with a Bachelor's degree; OR 3+ years with&#xa0;a Master's degree; OR a PhD without experience; OR equivalent work experience.</li><li>1+ years of hands-on experience with LLM prompt engineering, AI/ML API integration, or similar AI-native development</li><li>1+ years of hands-on experience developing applications or customizations on the ServiceNow platform</li><li>Strong proficiency in Python, Java, or JavaScript; growing proficiency across multiple languages</li><li>Solid understanding of JavaScript/GlideScript and ServiceNow platform APIs and data models</li><li>Experience with cloud platforms (AWS/GCP/Azure) and basic familiarity with managed AI services</li><li>Solid understanding of relational and NoSQL databases; familiarity with vector databases is a plus</li><li>Experience with RESTful APIs, microservices architecture, and modern backend frameworks</li><li>Understanding of software testing practices; ability to write effective unit and integration tests</li><li>Familiarity with CI/CD pipelines and automated testing frameworks</li><li>Experience with version control systems and collaborative development workflows</li><li>Strong problem-solving skills and ability to debug complex issues</li><li>Good communication skills; ability to explain technical concepts to both technical and non-technical audiences</li><li>Experience with Agile and Scrum development methodologies</li><li>Demonstrated ability to take ownership of features and deliver them successfully</li><li>Experience working with customers or in support-facing roles is a plus</li><li>Familiarity with LLM orchestration frameworks (LangChain, LlamaIndex) or vector databases is a plus</li><li>Understanding of AI/ML evaluation practices and responsible AI principles</li></ul><p><br>\nFor positions in this location, we offer a base pay of&#xa0;<strong>$143,200 - $243,400</strong>, plus equity (when applicable), variable/incentive compensation and benefits. Sales positions generally offer a competitive On Target Earnings (OTE) incentive compensation structure. Please note that the base pay shown is a guideline, and individual total compensation will vary based on factors such as qualifications, skill level, competencies, and work location. We also offer health plans, including flexible spending accounts, a 401(k) Plan with company match, ESPP, matching donations, a flexible time away plan and family leave programs. Compensation is based on the geographic location in which the role is located and is subject to change based on work location.</p>"
+   },
+   "additionalInformation": {
+    "title": "Additional Information",
+    "text": "<p><strong>Work Personas</strong></p><p>We approach our distributed world of work with flexibility and trust. Work personas (flexible, remote, or required in office) are categories that are assigned to ServiceNow employees depending on the nature of their work and their assigned work location. <a href=\"https://careers.servicenow.com/life-at-servicenow#workpersonas\" rel=\"noopener noreferrer\"><u>Learn more here</u></a>. To determine eligibility for a work persona, ServiceNow may confirm the distance between your primary residence and the closest ServiceNow office using a third-party service.</p><p><strong>Equal Opportunity Employer</strong></p><p>ServiceNow is an equal opportunity employer. All qualified applicants will receive consideration for employment without regard to race, color, religion, sex, sexual orientation, national origin, age, disability, gender identity,&#xa0; veteran status, or any other category protected by law. In addition, all qualified applicants with arrest or conviction records will be considered for employment in accordance with legal requirements. &#xa0;</p><p><strong>Accommodations</strong></p><p>We strive to create an accessible and inclusive experience for all candidates. If you require a reasonable accommodation to complete any part of the application process, or are unable to use this online application and need an alternative method to apply, please contact <a href=\"mailto:globaltalentss@servicenow.com\" rel=\"noopener noreferrer\">globaltalentss@servicenow.com </a>for assistance.&#xa0;</p><p><strong>Export Control Regulations</strong></p><p>For positions requiring access to controlled technology subject to export control regulations, including the U.S. Export Administration Regulations (EAR), ServiceNow may be required to obtain export control approval from government authorities for certain individuals. All employment is contingent upon ServiceNow obtaining any export license or other approval that may be required by relevant export control authorities.&#xa0;</p><p>From Fortune. ©2026 Fortune Media IP Limited. All rights reserved. Used under license.</p>"
+   }
+  }
+ },
+ "active": true,
+ "visibility": "PUBLIC",
+ "industry": {
+  "id": "it_and_services",
+  "label": "Information Technology And Services"
+ },
+ "function": {
+  "id": "engineering",
+  "label": "Engineering"
+ },
+ "department": {
+  "id": 2294038,
+  "label": "Engineering, Infrastructure and Operations"
+ },
+ "experienceLevel": {
+  "id": "not_applicable",
+  "label": "Not Applicable"
+ },
+ "typeOfEmployment": {
+  "id": "permanent",
+  "label": "Full-time"
+ },
+ "language": {
+  "code": "en",
+  "label": "English",
+  "labelNative": "English (US)"
+ }
+}
