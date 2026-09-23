@@ -1,0 +1,25 @@
+# Personal data and secrets
+.env
+config/answers.yaml
+
+# Generated / local state
+data/
+output/
+browser_profile/
+logs/
+.cache/
+
+# Python
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+*.egg-info/
+
+# OS
+.DS_Store
+
+# Keep directory structure
+!data/lca/.gitkeep
+!output/.gitkeep
+!browser_profile/.gitkeep

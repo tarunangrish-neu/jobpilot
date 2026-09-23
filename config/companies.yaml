@@ -1,0 +1,42 @@
+# Seed list of company job boards.
+#
+# Format:
+#   - name:   Display name shown in the UI and used for LCA fuzzy-matching.
+#     ats:    greenhouse | lever | ashby
+#     token:  The board token in the ATS URL, NOT the company's domain.
+#               greenhouse  boards.greenhouse.io/<token>        -> token
+#               lever       jobs.lever.co/<token>               -> token
+#               ashby       jobs.ashbyhq.com/<token>            -> token
+#     active: Optional, defaults to true. Set false to skip without deleting.
+#
+# Find a token for any careers page with:
+#     uv run jobpilot discover-token https://example.com/careers
+#
+# The entries below are verified-working placeholders so `fetch` runs out of the box.
+# Replace them with your own stablecoin/payments infra, crypto infra, AI infra, and fintech list.
+
+companies:
+  - name: Stripe
+    ats: greenhouse
+    token: stripe
+  - name: GitLab
+    ats: greenhouse
+    token: gitlab
+  - name: Databricks
+    ats: greenhouse
+    token: databricks
+  - name: Palantir
+    ats: lever
+    token: palantir
+  - name: Match Group
+    ats: lever
+    token: matchgroup
+  - name: OpenAI
+    ats: ashby
+    token: openai
+  - name: Ramp
+    ats: ashby
+    token: ramp
+  - name: Ashby
+    ats: ashby
+    token: ashby

@@ -1,0 +1,93 @@
+# JobPilot configuration. Personal answers live in config/answers.yaml (gitignored).
+
+http:
+  user_agent: "JobPilot/0.1 (personal job search tool)"
+  min_seconds_between_requests_per_host: 1.0
+  concurrency: 4
+  timeout_seconds: 30
+  cache_ttl_hours: 6
+
+llm:
+  provider: ollama            # ollama | openai_compatible
+  text_model: "qwen2.5:7b-instruct"
+  embed_model: "nomic-embed-text"
+  timeout_seconds: 120
+  max_retries: 2
+  log_path: "logs/llm.jsonl"
+
+filters:
+  max_posting_age_days: 30
+  locations_allow:
+    - united states
+    - usa
+    - us
+    - remote
+    - remote - us
+    - new york
+    - new jersey
+    - san francisco
+    - seattle
+    - austin
+    - boston
+    - chicago
+  # Keep false: boards mark roles "Remote - Japan" / "Remote - EU" as remote, and
+  # those are unusable on F-1 STEM OPT. Location must still clear locations_allow.
+  allow_remote_anywhere: false
+  title_include:
+    - backend
+    - back end
+    - infrastructure
+    - platform
+    - founding engineer
+    - distributed systems
+    - rust
+    - payments
+    - systems engineer
+    - software engineer
+    - ai infrastructure
+    - ml infrastructure
+  title_exclude:
+    - intern
+    - internship
+    - principal
+    - staff
+    - director
+    - manager
+    - frontend
+    - front end
+    - designer
+    - sales
+    - recruiter
+
+visa:
+  # Regex-free literal phrases; matched case-insensitively against the description.
+  blocking_phrases:
+    - "no sponsorship"
+    - "not provide sponsorship"
+    - "will not sponsor"
+    - "unable to sponsor"
+    - "do not sponsor"
+    - "cannot sponsor"
+    - "without sponsorship"
+    - "us citizens only"
+    - "u.s. citizens only"
+    - "must be a us citizen"
+    - "must be a u.s. citizen"
+    - "citizen or green card holder"
+    - "security clearance required"
+    - "active security clearance"
+    - "ts/sci"
+    - "itar"
+  llm_check_ambiguous: true
+
+scoring:
+  embed_top_n: 60
+  weights:
+    embed: 0.3
+    llm: 0.7
+  lca_boost: 5.0             # added to final score when the company has LCA history
+
+apply:
+  daily_submission_cap: 40
+  answer_match_threshold: 0.82   # cosine similarity for mapping a form question to the answer bank
+  headless: false

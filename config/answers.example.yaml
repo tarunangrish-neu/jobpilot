@@ -1,0 +1,34 @@
+# Copy to config/answers.yaml (gitignored) and fill in truthfully.
+# These values are used VERBATIM. The LLM never generates work-authorization,
+# sponsorship, EEO, or salary answers.
+
+contact:
+  first_name: ""
+  last_name: ""
+  email: ""
+  phone: ""
+  location: "Jersey City, NJ"
+  linkedin: ""
+  github: ""
+  website: ""
+
+work_authorization:
+  authorized_to_work_in_us: "Yes"           # F-1 STEM OPT
+  current_status_note: "F-1 STEM OPT (requires E-Verify employer and Form I-983)"
+  require_sponsorship_now_or_future: ""     # fill truthfully
+
+logistics:
+  willing_to_relocate: ""
+  earliest_start_date: ""
+  notice_period: ""
+  salary_expectation: ""
+
+eeo:                                         # all optional; default "Decline to self-identify"
+  gender: "Decline to self-identify"
+  race_ethnicity: "Decline to self-identify"
+  veteran_status: "Decline to self-identify"
+  disability_status: "Decline to self-identify"
+
+common_questions:
+  - q: "Why do you want to work here?"
+    a: null                                  # null = LLM drafts per company, flagged for review
