@@ -112,6 +112,26 @@ class PoliteClient:
             self._write_cache(url, {"status": resp.status_code, "body": body})
         return resp.status_code, body
 
+    async def post_json(
+        self, url: str, payload: Any, headers: Optional[dict[str, str]] = None
+    ) -> tuple[int, Any]:
+        """POST JSON and parse the JSON reply. Rate-limited, never disk-cached.
+
+        Used by the OpenAI-compatible LLM provider; the LLM layer keeps its
+        own cache keyed by prompt hash.
+        """
+        if self._client is None:
+            raise RuntimeError("PoliteClient must be used as an async context manager")
+
+        host = httpx.URL(url).host or url
+        async with self._sem:
+            await self._throttle(host)
+            resp = await self._client.post(url, json=payload, headers=headers)
+        try:
+            return resp.status_code, resp.json()
+        except json.JSONDecodeError:
+            return resp.status_code, None
+
     async def get_json(self, url: str) -> tuple[int, Any]:
         """GET a URL and parse JSON. Returns (status, parsed-or-None)."""
         status, body = await self.get_text(url)

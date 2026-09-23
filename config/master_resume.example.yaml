@@ -1,0 +1,95 @@
+# EXAMPLE master resume -- a fictional person. `jobpilot init` copies this to
+# data/master_resume.yaml (gitignored). Replace every entry with your own, true content.
+#
+# This file is the single source of truth: tailoring may only select, reorder, and
+# rephrase what is written here. Every bullet needs a unique `id`; `tags` are optional
+# hints for selection. Any number, company, or technology the tailored resume mentions
+# must already appear here, or verify.py rejects the rephrase.
+
+contact:
+  name: "Alex Example"
+  email: "alex@example.com"
+  phone: "+1 555 010 0000"
+  location: "Jersey City, NJ"
+
+links:
+  github: "https://github.com/alex-example"
+  linkedin: "https://www.linkedin.com/in/alex-example"
+
+summary:
+  backend: >-
+    Backend engineer focused on payment systems and distributed services, with production
+    experience in Go, Rust, and PostgreSQL.
+  infra: >-
+    Infrastructure engineer who builds reliable platforms: Kubernetes, Terraform, and
+    observability for high-throughput services.
+  ai_infra: >-
+    Engineer building ML serving and data infrastructure, from GPU inference services to
+    feature pipelines.
+
+experience:
+  - company: "Ledgerline"
+    title: "Software Engineer, Payments"
+    dates: "Jun 2024 - Present"
+    location: "New York, NY"
+    bullets:
+      - id: ll-ledger
+        text: "Designed a double-entry ledger service in Go that settles 2M transactions per day with exactly-once semantics"
+        tags: [payments, backend, go]
+      - id: ll-latency
+        text: "Cut p99 authorization latency from 480ms to 120ms by moving risk checks to an async Kafka pipeline"
+        tags: [performance, kafka]
+      - id: ll-stablecoin
+        text: "Built USDC payout rails with on-chain reconciliation against PostgreSQL ledgers"
+        tags: [stablecoin, crypto, payments]
+      - id: ll-oncall
+        text: "Led the on-call rotation for 6 payment services and wrote runbooks that reduced incident MTTR by 35%"
+        tags: [reliability]
+      - id: ll-rust
+        text: "Rewrote the card-tokenization hot path in Rust, lowering CPU usage by 40%"
+        tags: [rust, performance]
+
+  - company: "Northwind Cloud"
+    title: "Platform Engineering Intern"
+    dates: "May 2023 - Aug 2023"
+    location: "Seattle, WA"
+    bullets:
+      - id: nw-k8s
+        text: "Automated Kubernetes cluster provisioning with Terraform, reducing environment setup from 2 days to 3 hours"
+        tags: [infrastructure, kubernetes, terraform]
+      - id: nw-obs
+        text: "Added OpenTelemetry tracing across 12 microservices and built Grafana dashboards for SLO tracking"
+        tags: [observability]
+      - id: nw-ci
+        text: "Parallelized the CI pipeline in GitHub Actions, cutting median build time by 50%"
+        tags: [ci, developer-experience]
+
+projects:
+  - name: "tinyraft"
+    dates: "2024"
+    url: "https://github.com/alex-example/tinyraft"
+    bullets:
+      - id: pr-raft
+        text: "Implemented the Raft consensus protocol in Rust with log compaction and a linearizable key-value store"
+        tags: [distributed-systems, rust]
+  - name: "servelite"
+    dates: "2023"
+    bullets:
+      - id: pr-serve
+        text: "Built a batching inference server in Python on top of PyTorch that doubled GPU throughput for small models"
+        tags: [ml-infra, python]
+
+skills:
+  languages: [Go, Rust, Python, SQL, TypeScript]
+  infrastructure: [Kubernetes, Terraform, Docker, AWS, GitHub Actions]
+  data: [PostgreSQL, Kafka, Redis]
+  observability: [OpenTelemetry, Grafana, Prometheus]
+  ml: [PyTorch]
+
+education:
+  - school: "Example State University"
+    degree: "M.S. Computer Science"
+    dates: "2022 - 2024"
+    location: "Hoboken, NJ"
+    details:
+      - "Coursework: Distributed Systems, Database Internals, Cryptography"

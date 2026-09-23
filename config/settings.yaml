@@ -87,6 +87,13 @@ scoring:
     llm: 0.7
   lca_boost: 5.0             # added to final score when the company has LCA history
 
+tailor:
+  max_bullets: 12              # upper bound; bullets are trimmed further until the PDF is one page
+  # auto: write a cover letter only when the application form has a cover-letter field
+  # (generated during prefill). always / never override that.
+  cover_letter: auto
+  cover_letter_max_words: 200
+
 apply:
   daily_submission_cap: 40
   answer_match_threshold: 0.82   # cosine similarity for mapping a form question to the answer bank
