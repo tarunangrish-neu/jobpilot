@@ -114,12 +114,14 @@ class OllamaBackend:
         self.embed_model = cfg.get("embed_model", "nomic-embed-text")
         # Keep models resident between stages; reloading qwen costs seconds per stage.
         self.keep_alive = cfg.get("keep_alive", "30m")
+        # Ollama's default 4096-token window is too small for resume + JD + a long plan.
+        self.num_ctx = int(cfg.get("num_ctx", 8192))
         self._client = ollama.AsyncClient(
             host=os.environ.get("OLLAMA_HOST"), timeout=float(cfg.get("timeout_seconds", 120))
         )
 
     async def chat(self, messages, schema, model=None, max_tokens=None) -> str:
-        options: dict[str, Any] = {"temperature": 0}
+        options: dict[str, Any] = {"temperature": 0, "num_ctx": self.num_ctx}
         if max_tokens:
             options["num_predict"] = max_tokens
         resp = await self._client.chat(

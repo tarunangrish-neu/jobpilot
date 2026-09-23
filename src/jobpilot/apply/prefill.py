@@ -86,10 +86,9 @@ def _load(top: int, job_ids: Optional[list[int]]):
         else:
             query = query.where(Job.status == "tailored").order_by(Job.final_score.desc()).limit(top)
         rows = sess.exec(query).all()
-        for row in rows:
-            for obj in row:
-                if obj is not None:
-                    sess.expunge(obj)
+        # Detach each object once: jobs at the same company share one Company instance.
+        for obj in {id(o): o for row in rows for o in row if o is not None}.values():
+            sess.expunge(obj)
         return rows
 
 

@@ -358,3 +358,23 @@ def test_dry_run_touches_nothing_and_records_the_plan(apply_root, fake_llm, monk
     assert by_q["Why do you want to work at Acme?"]["source"] == "LLM draft (review)"
     assert by_q["Are you authorized to work in the U.S. without company sponsorship?"]["source"] == "NEEDS YOU"
     assert Path(plan["screenshot"]).exists()
+
+
+def test_prefill_loads_several_jobs_at_one_company(apply_root):
+    """Regression: two jobs sharing a Company made _load detach it twice and crash."""
+    from sqlmodel import select
+
+    from jobpilot import db
+    from jobpilot.apply.prefill import _load
+    from jobpilot.models import Application, Job, JobPosting
+
+    with db.session() as sess:
+        db.sync_companies(sess, [{"name": "Acme", "ats": "lever", "token": "acme"}])
+        for ext in ("x", "y"):
+            db.upsert_posting(sess, JobPosting(source="lever", external_id=ext, company_name="Acme", title="Backend"), 1)
+        for job in sess.exec(select(Job)).all():
+            job.status, job.final_score = "tailored", 50.0
+            sess.add(Application(job_id=job.id, resume_path="r.pdf"))
+        sess.commit()
+    rows = _load(10, None)
+    assert len(rows) == 2 and rows[0][1].name == rows[1][1].name == "Acme"

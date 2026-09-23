@@ -55,7 +55,7 @@ $excerpts
 TAILOR = Prompt(
     name="tailor",
     version=1,
-    max_tokens=1200,
+    max_tokens=2000,
     system="""
 You tailor a resume to one job. You may ONLY select, reorder, and lightly rephrase
 content that already exists in the master resume. Never invent or alter employers,

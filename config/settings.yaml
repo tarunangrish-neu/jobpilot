@@ -18,6 +18,7 @@ llm:
   # ~1 generation at a time, so more just queues. Raise to 4-8 for a hosted provider.
   concurrency: 1
   keep_alive: "30m"           # keep models loaded between stages (reload costs seconds)
+  num_ctx: 8192               # context window; 4096 truncates resume + JD + tailoring plan
   # Optional faster model per task, e.g. after `ollama pull qwen2.5:3b-instruct`:
   #   task_models: {visa_check: "qwen2.5:3b-instruct", hn_extract: "qwen2.5:3b-instruct"}
   task_models: {}
