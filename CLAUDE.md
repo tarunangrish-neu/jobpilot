@@ -54,7 +54,9 @@ if they come from the board rather than from our own processing.
 
 **`http.PoliteClient` is the only way to reach the network.** It owns the per-host ≥1s spacing,
 the concurrency semaphore, and the on-disk response cache under `.cache/http/`. Never construct
-a bare `httpx` client — the politeness rules are a hard requirement, not a nicety.
+a bare `httpx` client — the politeness rules are a hard requirement, not a nicety. `_slot` waits
+out a host's spacing *before* taking a semaphore slot; waiting inside it let the 144 boards on
+`api.ashbyhq.com` hold every slot and serialized the whole fetch (`test_http` pins this).
 
 Every status change goes through `db.set_status`, which writes an `events` row. Keep it that
 way; `events` is the audit log.
@@ -71,9 +73,13 @@ How the later stages hand off (each stage only picks up what the previous one fi
 - **LLM concurrency** is `llm.concurrency` (default 1), enforced across processes by lock files
   in `.cache/llm_slots/` (`llm/client.LLMSlots`). Local Ollama generates ~one reply at a time;
   don't raise it for Ollama, and never reuse `http.concurrency` for model calls.
-- **The UI is the front door.** `jobpilot ui` opens on the Pipeline page, which starts stages via
+- **The UI is the front door.** `jobpilot ui` opens on the Jobs page: fetch, one table of every
+  fetched job (`ui/actions.openings`, no filter/rank stage and no LLM), tailor the ticked rows
+  (`tailor --job ... --cover-letter`), then an Apply link and "I applied" — the user applies on the
+  company's site. `tailor.TAILORABLE` includes `new` and `filtered_out` for this. The old Pipeline /
+  Review queue / Manual apply pages sit behind a sidebar toggle. Runs start via
   `jobpilot/runs.py` (a `runs` row + `python -m jobpilot.runs <id>` worker, log in `logs/runs/`)
-  and refuses to start one while any pipeline (UI or terminal) is running. New stages need a
+  and refuse to start while any pipeline (UI or terminal) is running. New stages need a
   card in `ui/review_app.STAGE_CARDS` and an entry in `runs.STAGES`; never add a submit stage.
 - **Tests use `tests/fixtures/settings.test.yaml`**, not `config/settings.yaml`, so tuning your
   own settings can't change test results.

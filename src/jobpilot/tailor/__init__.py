@@ -32,8 +32,9 @@ from .verify import ResumeFacts
 log = logging.getLogger(__name__)
 
 MIN_BULLETS = 4
-# Statuses a job may be (re)tailored from. Submitted jobs are never touched.
-TAILORABLE = ("scored", "tailored", "prefilled", "needs_human")
+# Statuses a job may be (re)tailored from. Submitted jobs are never touched. `new` and
+# `filtered_out` are here because the Jobs page tailors any opening you pick, unranked.
+TAILORABLE = ("new", "filtered_out", "scored", "tailored", "prefilled", "needs_human")
 
 
 @dataclass

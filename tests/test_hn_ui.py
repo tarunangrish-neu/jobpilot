@@ -90,6 +90,7 @@ def test_ui_renders_queue_and_gates_approval(ui_db, monkeypatch):
     monkeypatch.setattr(submit, "launch_submit", lambda job_id: launched.append(job_id))
 
     at = AppTest.from_file(APP, default_timeout=30).run()
+    at.sidebar.toggle[0].set_value(True).run()  # the old pages sit behind this toggle
     at.sidebar.radio[0].set_value("Review queue").run()
     assert not at.exception
     assert any("Backend Engineer" in s.value for s in at.subheader)  # top-ranked job shown first
@@ -114,6 +115,7 @@ def test_ui_skip_and_stats(ui_db):
     from jobpilot.models import Job
 
     at = AppTest.from_file(APP, default_timeout=30).run()
+    at.sidebar.toggle[0].set_value(True).run()  # the old pages sit behind this toggle
     at.sidebar.radio[0].set_value("Review queue").run()
     at.selectbox[0].select(ui_db["b"]).run()
     _button(at, "Skip").click().run()

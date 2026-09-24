@@ -40,7 +40,8 @@ def test_throttle_spaces_requests_to_the_same_host(temp_root):
         client.min_interval = 0.25
         start = time.monotonic()
         for _ in range(3):
-            await client._throttle("boards-api.greenhouse.io")
+            async with client._slot("boards-api.greenhouse.io"):
+                pass
         return time.monotonic() - start
 
     assert asyncio.run(run()) >= 0.5   # two gaps of 0.25s between three requests
@@ -53,10 +54,42 @@ def test_throttle_does_not_penalise_different_hosts(temp_root):
         client = PoliteClient()
         client.min_interval = 0.3
         start = time.monotonic()
-        await asyncio.gather(
-            client._throttle("api.lever.co"),
-            client._throttle("api.ashbyhq.com"),
-        )
+
+        async def hit(host: str) -> None:
+            async with client._slot(host):
+                pass
+
+        await asyncio.gather(hit("api.lever.co"), hit("api.ashbyhq.com"))
         return time.monotonic() - start
 
     assert asyncio.run(run()) < 0.2
+
+
+def test_a_queued_host_does_not_hold_slots_other_hosts_need(temp_root):
+    """Requests waiting out one host's spacing must not starve every other host.
+
+    Regression: the wait used to happen inside the concurrency semaphore, so the
+    many boards on api.ashbyhq.com filled every slot and the whole fetch ran at
+    ~1 request/s.
+    """
+    from jobpilot.http import PoliteClient
+
+    async def run() -> tuple[float, list[float]]:
+        client = PoliteClient()
+        client.min_interval = 0.3
+        client._sem = asyncio.Semaphore(1)
+        start = time.monotonic()
+        same_host: list[float] = []
+        other: list[float] = []
+
+        async def hit(host: str, record: list[float]) -> None:
+            async with client._slot(host):
+                record.append(time.monotonic() - start)
+
+        await asyncio.gather(*(hit("api.ashbyhq.com", same_host) for _ in range(4)), hit("api.lever.co", other))
+        return other[0], same_host
+
+    other_at, same_host = asyncio.run(run())
+    assert other_at < 0.2
+    gaps = [b - a for a, b in zip(same_host, same_host[1:])]
+    assert all(g >= 0.29 for g in gaps)

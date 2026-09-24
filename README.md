@@ -52,15 +52,26 @@ Then fill in:
 make                                 # set up anything missing, then open the UI
 ```
 
-The UI opens on the **Pipeline** page: how many jobs sit at each stage (fetched →
-filtered → ranked → tailored → dry-run → prefilled → submitted), what to run next, and a
-card per stage (Fetch, Filter, Rank, Tailor, Dry-run forms, Prefill) with its options.
-A stage runs in the background; the page shows its live log and LLM progress, and you
-can stop it. Only one stage runs at a time, including ones started from a terminal.
-**Dry-run forms** reads each live application form and shows, question by question,
-what would be filled and from where (answers.yaml, your tailored resume, an LLM draft
-to review, or "needs you"), without typing or uploading anything. The **Review queue**
-page is where you review, edit, and approve & submit one application at a time.
+The UI opens on the **Jobs** page, which skips the filter and rank stages (and their LLM
+calls) entirely:
+
+1. **Fetch openings** pulls every board in `companies.yaml`, all boards in parallel with
+   at least 1 s between requests to the same site. A cold fetch of ~280 boards takes ~5
+   minutes (the slowest single site, Microsoft's, needs ~240 requests); within the 6 h
+   cache window it takes about a minute.
+2. **Openings** is one table of every fetched job, newest first, cross-posts collapsed.
+   Search, "posted within", status, "hide sponsorship blockers" (a `visa.blocking_phrases`
+   match), and "only my title/location rules" narrow it instantly; none of them call the LLM.
+   Each row has an **Apply ↗** link to the posting on the company's site.
+3. Tick rows and **Tailor resume + cover letter**: one background run, about half a
+   minute per job on local Ollama.
+4. **Ready to apply** has, per tailored job, the Apply button, resume and cover-letter
+   downloads, the letter as copyable text, and **I applied** (marks it submitted) or **Skip**.
+
+Runs show their live log on the page and only one runs at a time, including ones started
+from a terminal. The old flow — Pipeline (filter, rank, dry-run and prefill cards), Review
+queue (approve & submit), Manual apply — is behind **Show the old auto-fill pipeline** in
+the sidebar.
 
 Without the UI: `uv run jobpilot run-daily --top 30` (never submits), then `uv run jobpilot ui`.
 

@@ -13,6 +13,7 @@ import json
 import logging
 import time
 from collections import defaultdict
+from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Any, Optional
 
@@ -82,15 +83,32 @@ class PoliteClient:
 
     # --- fetching ------------------------------------------------------
 
-    async def _throttle(self, host: str) -> None:
-        """Ensure >= min_interval seconds since the last hit on this host."""
+    async def _wait_turn(self, host: str) -> None:
+        """Sleep until >= min_interval seconds since the last hit on this host."""
+        last = self._last_request.get(host)
+        if last is not None:
+            wait = self.min_interval - (time.monotonic() - last)
+            if wait > 0:
+                await asyncio.sleep(wait)
+
+    @asynccontextmanager
+    async def _slot(self, host: str):
+        """One request's turn on `host`: its spacing, then a concurrency slot.
+
+        The spacing is waited out *before* taking a slot. Sleeping inside one
+        let the 144 Ashby boards (all on api.ashbyhq.com) fill every slot while
+        they queued for their host, which cut the whole fetch to ~1 request/s.
+        The host lock is held until the slot is taken, so the recorded time is
+        when the request really starts and same-host spacing still holds.
+        """
         async with self._host_locks[host]:
-            last = self._last_request.get(host)
-            if last is not None:
-                wait = self.min_interval - (time.monotonic() - last)
-                if wait > 0:
-                    await asyncio.sleep(wait)
+            await self._wait_turn(host)
+            await self._sem.acquire()
             self._last_request[host] = time.monotonic()
+        try:
+            yield
+        finally:
+            self._sem.release()
 
     async def get_text(self, url: str, headers: Optional[dict[str, str]] = None) -> tuple[int, str]:
         """GET a URL, returning (status_code, body). Cached and rate-limited.
@@ -106,8 +124,7 @@ class PoliteClient:
             raise RuntimeError("PoliteClient must be used as an async context manager")
 
         host = httpx.URL(url).host or url
-        async with self._sem:
-            await self._throttle(host)
+        async with self._slot(host):
             resp = await self._client.get(url, headers=headers)
 
         body = resp.text
@@ -128,8 +145,7 @@ class PoliteClient:
             raise RuntimeError("PoliteClient must be used as an async context manager")
 
         host = httpx.URL(url).host or url
-        async with self._sem:
-            await self._throttle(host)
+        async with self._slot(host):
             resp = await self._client.post(url, json=payload, headers=headers)
         try:
             return resp.status_code, resp.json()

@@ -89,6 +89,110 @@ def queue(
         return rows
 
 
+# --- Jobs page: every fetched opening, no filter or rank stage ---------------------
+
+# Hidden from the Jobs table unless asked for: already dealt with.
+DONE_STATUSES = ("submitted", "skipped", "rejected", "interviewing", "offer")
+
+
+def _blocking_re():
+    """One pass over a description for any `visa.blocking_phrases` entry (no LLM)."""
+    import re
+
+    phrases = sorted((config.settings().get("visa", {}) or {}).get("blocking_phrases") or [], key=len, reverse=True)
+    if not phrases:
+        return None
+    return re.compile(r"(?<![a-z0-9])(" + "|".join(re.escape(p.lower()) for p in phrases) + r")(?![a-z0-9])")
+
+
+def jobs_version() -> tuple[int, int]:
+    """Changes when jobs are added, tailored, or change status (a cache key for `openings`)."""
+    from sqlmodel import func
+
+    with db.session() as sess:
+        last_job = sess.exec(select(func.max(Job.id))).one() or 0
+        last_event = sess.exec(select(func.max(Event.id))).one() or 0
+    return last_job, last_event
+
+
+def openings() -> list[dict[str, Any]]:
+    """Every fetched job, newest first, one row per role (cross-posts collapse by content hash).
+
+    `sponsorship` is the first `visa.blocking_phrases` hit in the description, or
+    'blocked' if an earlier visa screen said so. Nothing here calls the LLM.
+    """
+    blocking = _blocking_re()
+    with db.session() as sess:
+        tailored = {
+            job_id for job_id, path in sess.exec(select(Application.job_id, Application.resume_path)).all() if path
+        }
+        query = (
+            select(Job.id, Job.title, Job.location, Job.remote, Job.url, Job.apply_url, Job.posted_at,
+                   Job.fetched_at, Job.status, Job.source, Job.content_hash, Job.visa_flag,
+                   Job.description_text, Company.name)
+            .join(Company, Job.company_id == Company.id, isouter=True)
+            .order_by(Job.posted_at.desc().nulls_last(), Job.id.desc())
+        )
+        rows = []
+        for (job_id, title, location, remote, url, apply_url, posted, fetched, status, source, chash, visa,
+             text, company) in sess.exec(query):
+            hit = blocking.search(text.lower()) if blocking and text else None
+            rows.append({
+                "id": job_id,
+                "company": company or "",
+                "title": title,
+                "location": location or ("Remote" if remote else ""),
+                "remote": bool(remote),
+                "posted": (posted or fetched).date() if (posted or fetched) else None,
+                "status": status,
+                "tailored": job_id in tailored,
+                "sponsorship": f"blocked: {hit.group(1)}" if hit else ("blocked" if visa == "blocked" else ""),
+                "apply": apply_url or url,
+                "source": source,
+                "hash": chash,
+            })
+    # One row per cross-posted role: the copy you tailored, else the first one fetched.
+    keep: dict[str, tuple] = {}
+    for r in rows:
+        rank = (not r["tailored"], r["id"])
+        if r["hash"] and rank < keep.get(r["hash"], (True, float("inf"))):
+            keep[r["hash"]] = rank
+    return [r for r in rows if not r["hash"] or keep[r["hash"]][1] == r["id"]]
+
+
+def ready_to_apply() -> list[dict[str, Any]]:
+    """Tailored jobs you haven't applied to yet, most recently tailored first."""
+    with db.session() as sess:
+        query = (
+            select(Job, Company, Application)
+            .join(Application, Application.job_id == Job.id)
+            .join(Company, Job.company_id == Company.id, isouter=True)
+            .where(Application.resume_path != "", Job.status.not_in(DONE_STATUSES))
+            .order_by(Application.id.desc())
+        )
+        return [
+            {
+                "id": job.id,
+                "company": company.name if company else "",
+                "title": job.title,
+                "location": job.location,
+                "apply": job.apply_url or job.url,
+                "resume": app.resume_path,
+                "cover_letter": app.cover_letter_path,
+                "cover_letter_text": app.cover_letter_text,
+            }
+            for job, company, app in sess.exec(query).all()
+        ]
+
+
+def tailor_args(job_ids: list[int], cover_letter: bool = True) -> list[str]:
+    """CLI args for one `tailor` run over the picked jobs."""
+    args: list[str] = []
+    for job_id in job_ids:
+        args += ["--job", str(job_id)]
+    return args + ["--cover-letter" if cover_letter else "--no-cover-letter"]
+
+
 def detail(job_id: int) -> Optional[Detail]:
     with db.session() as sess:
         job = sess.get(Job, job_id)

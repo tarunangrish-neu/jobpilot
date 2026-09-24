@@ -122,6 +122,9 @@ def test_pipeline_page_renders_and_pauses_while_busy(temp_root, quiet_machine):
 
     db.init_db()
     at = AppTest.from_file(APP, default_timeout=30).run()
+    assert at.title[0].value == "Jobs"  # the landing page; Pipeline is behind the toggle
+    at.sidebar.toggle[0].set_value(True).run()
+    at.sidebar.radio[0].set_value("Pipeline").run()
     assert not at.exception
     assert at.title[0].value == "Pipeline"
     labels = [m.label for m in at.metric]
@@ -136,5 +139,7 @@ def test_pipeline_page_renders_and_pauses_while_busy(temp_root, quiet_machine):
         sess.add(Run(stage="score", pid=os.getpid(), status="running"))
         sess.commit()
     at = AppTest.from_file(APP, default_timeout=30).run()
+    at.sidebar.toggle[0].set_value(True).run()
+    at.sidebar.radio[0].set_value("Pipeline").run()
     assert not at.exception
     assert all(b.disabled for b in at.button if b.label.startswith("Run "))
