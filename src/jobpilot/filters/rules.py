@@ -71,12 +71,14 @@ def _us_signal(segment: str, allow: list[str]) -> bool:
 
 
 def check_location(location: str, remote: bool, cfg: dict[str, Any]) -> Optional[str]:
-    """Pass when any listed location is in the allow list (US + remote-US by default).
+    """Pass when any listed location is in the allow list (US + remote-US by default), or none is set.
 
     Boards mark "Remote - Japan" as remote, so a remote segment only passes
     bare ("Remote") or when its qualifier is itself allowed ("Remote - US").
     """
     allow = [a.lower() for a in (cfg.get("locations_allow") or [])]
+    if not allow:  # no allow list means any location, as an empty title_include means any title
+        return None
     if remote and cfg.get("allow_remote_anywhere"):
         return None
 

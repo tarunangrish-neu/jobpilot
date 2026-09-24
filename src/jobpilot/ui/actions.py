@@ -121,6 +121,8 @@ def openings() -> list[dict[str, Any]]:
     `sponsorship` is the first `visa.blocking_phrases` hit in the description, or
     'blocked' if an earlier visa screen said so. Nothing here calls the LLM.
     """
+    from ..filters.screen import role_types, seniority, years_required
+
     blocking = _blocking_re()
     with db.session() as sess:
         tailored = {
@@ -129,13 +131,13 @@ def openings() -> list[dict[str, Any]]:
         query = (
             select(Job.id, Job.title, Job.location, Job.remote, Job.url, Job.apply_url, Job.posted_at,
                    Job.fetched_at, Job.status, Job.source, Job.content_hash, Job.visa_flag,
-                   Job.description_text, Company.name)
+                   Job.description_text, Job.filter_reason, Company.name)
             .join(Company, Job.company_id == Company.id, isouter=True)
             .order_by(Job.posted_at.desc().nulls_last(), Job.id.desc())
         )
         rows = []
         for (job_id, title, location, remote, url, apply_url, posted, fetched, status, source, chash, visa,
-             text, company) in sess.exec(query):
+             text, reason, company) in sess.exec(query):
             hit = blocking.search(text.lower()) if blocking and text else None
             rows.append({
                 "id": job_id,
@@ -145,10 +147,14 @@ def openings() -> list[dict[str, Any]]:
                 "remote": bool(remote),
                 "posted": (posted or fetched).date() if (posted or fetched) else None,
                 "status": status,
+                "type": ", ".join(role_types(title)),
+                "level": seniority(title),
+                "years": years_required(text),
                 "tailored": job_id in tailored,
                 "sponsorship": f"blocked: {hit.group(1)}" if hit else ("blocked" if visa == "blocked" else ""),
                 "apply": apply_url or url,
                 "source": source,
+                "why_hidden": reason if status == "filtered_out" else "",
                 "hash": chash,
             })
     # One row per cross-posted role: the copy you tailored, else the first one fetched.
@@ -183,6 +189,32 @@ def ready_to_apply() -> list[dict[str, Any]]:
             }
             for job, company, app in sess.exec(query).all()
         ]
+
+
+# Fetch filters the Jobs page edits: (key, default). Saved to config/filters.yaml.
+FILTER_KEYS = (
+    ("title_include", []), ("title_exclude", []), ("locations_allow", []), ("allow_remote_anywhere", False),
+    ("max_posting_age_days", 0), ("max_years_experience", 0), ("companies_exclude", []),
+    ("description_exclude", []), ("drop_sponsorship_blockers", True),
+)
+
+
+def current_filters() -> dict[str, Any]:
+    cfg = config.settings().get("filters", {}) or {}
+    return {key: cfg.get(key, default) for key, default in FILTER_KEYS}
+
+
+def save_filters_and_rescreen(values: dict[str, Any]):
+    """Save the Jobs page's fetch filters, then re-screen every fetched job with them."""
+    from ..filters.screen import rescreen
+
+    config.save_filters({key: values.get(key, default) for key, default in FILTER_KEYS})
+    return rescreen()
+
+
+def company_names() -> list[str]:
+    with db.session() as sess:
+        return sorted({n for n in sess.exec(select(Company.name)).all() if n})
 
 
 def tailor_args(job_ids: list[int], cover_letter: bool = True) -> list[str]:

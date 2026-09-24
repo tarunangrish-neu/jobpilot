@@ -73,11 +73,14 @@ How the later stages hand off (each stage only picks up what the previous one fi
 - **LLM concurrency** is `llm.concurrency` (default 1), enforced across processes by lock files
   in `.cache/llm_slots/` (`llm/client.LLMSlots`). Local Ollama generates ~one reply at a time;
   don't raise it for Ollama, and never reuse `http.concurrency` for model calls.
-- **The UI is the front door.** `jobpilot ui` opens on the Jobs page: fetch, one table of every
-  fetched job (`ui/actions.openings`, no filter/rank stage and no LLM), tailor the ticked rows
-  (`tailor --job ... --cover-letter`), then an Apply link and "I applied" — the user applies on the
-  company's site. `tailor.TAILORABLE` includes `new` and `filtered_out` for this. The old Pipeline /
-  Review queue / Manual apply pages sit behind a sidebar toggle. Runs start via
+- **The UI is the front door.** `jobpilot ui` opens on the Jobs page: fetch (which ends with
+  `filters/screen.rescreen`, rules only, no LLM), one table of every passing job
+  (`ui/actions.openings`), tailor the ticked rows (`tailor --job ... --cover-letter`), then the
+  Ready to apply page (Apply link, PDFs, "I applied") — the user applies on the company's site.
+  Screening only moves jobs between `new` and `filtered_out` and never touches a job with a
+  tailored resume. The Jobs page saves fetch filters to gitignored `config/filters.yaml`, which
+  `config.settings()` merges over `filters:`. `tailor.TAILORABLE` includes `new` and
+  `filtered_out`. The old Pipeline / Review queue / Manual apply pages sit behind a sidebar toggle. Runs start via
   `jobpilot/runs.py` (a `runs` row + `python -m jobpilot.runs <id>` worker, log in `logs/runs/`)
   and refuse to start while any pipeline (UI or terminal) is running. New stages need a
   card in `ui/review_app.STAGE_CARDS` and an entry in `runs.STAGES`; never add a submit stage.
@@ -160,5 +163,5 @@ These come from the build spec and are not negotiable:
 
 ## Gitignored, never commit
 
-`config/answers.yaml`, `.env`, `data/` (including `jobpilot.db` and LCA files), `output/`,
+`config/answers.yaml`, `config/filters.yaml`, `.env`, `data/` (including `jobpilot.db` and LCA files), `output/`,
 `browser_profile/`, `.cache/`, `logs/`. `config/answers.example.yaml` is the committed template.

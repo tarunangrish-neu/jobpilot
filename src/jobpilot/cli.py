@@ -161,8 +161,11 @@ def fetch(
     discover: bool = typer.Option(
         None, "--discover/--no-discover", help="Run discovery.queries first (default: discovery.enabled)."
     ),
+    screen: bool = typer.Option(
+        True, "--screen/--no-screen", help="Apply your filters (no LLM) to every unreviewed job afterwards."
+    ),
 ) -> None:
-    """Pull postings from every active board in config/companies.yaml (and HN if enabled)."""
+    """Pull postings from every active board in config/companies.yaml (and HN if enabled), then screen them."""
     run_search = config.settings().get("discovery", {}).get("enabled", False) if discover is None else discover
     if run_search:
         _run_discovery()
@@ -207,6 +210,25 @@ def fetch(
         _table(rows, ["company", "ats", "fetched", "new", "refreshed", "status"])
     )
     typer.echo(f"\ntotal jobs in database: {total}")
+    if screen:
+        _print_screen()
+
+
+def _print_screen() -> None:
+    from .filters.screen import rescreen
+
+    report = rescreen()
+    typer.echo(f"screened {report.considered} jobs with your filters: {report.passed} pass, "
+               f"{report.considered - report.passed} screened out ({report.restored} brought back)")
+    for reason, n in report.reasons.most_common():
+        typer.echo(f"  {n:6}  {reason}")
+
+
+@app.command("screen")
+def screen_cmd() -> None:
+    """Re-apply your filters (settings.yaml + config/filters.yaml) to fetched jobs. No network, no LLM."""
+    db.init_db()
+    _print_screen()
 
 
 @app.command("discover-token")

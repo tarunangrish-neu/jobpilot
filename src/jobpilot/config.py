@@ -27,9 +27,26 @@ def _load_yaml(path: Path) -> dict[str, Any]:
         return yaml.safe_load(fh) or {}
 
 
+def filters_path() -> Path:
+    """Your own fetch filters, saved from the Jobs page; they override `filters:` in settings.yaml."""
+    return project_root() / "config" / "filters.yaml"
+
+
 @functools.lru_cache(maxsize=1)
 def settings() -> dict[str, Any]:
-    return _load_yaml(project_root() / "config" / "settings.yaml")
+    loaded = _load_yaml(project_root() / "config" / "settings.yaml")
+    if filters_path().exists():
+        loaded["filters"] = {**(loaded.get("filters") or {}), **_load_yaml(filters_path())}
+    return loaded
+
+
+def save_filters(values: dict[str, Any]) -> None:
+    """Write config/filters.yaml and reload settings so the new filters apply at once."""
+    path = filters_path()
+    path.parent.mkdir(parents=True, exist_ok=True)
+    header = "# Fetch filters saved from the Jobs page. They override `filters:` in settings.yaml.\n"
+    path.write_text(header + yaml.safe_dump(values, sort_keys=False, allow_unicode=True), encoding="utf-8")
+    settings.cache_clear()
 
 
 def companies() -> list[dict[str, Any]]:

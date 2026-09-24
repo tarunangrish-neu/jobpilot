@@ -64,11 +64,10 @@ def test_tailor_args_and_new_jobs_are_tailorable(jobs_db):
     assert {j.id for j in _load_jobs(0, [jobs_db["a"], jobs_db["b"]])} == {jobs_db["a"], jobs_db["b"]}
 
 
-def test_jobs_page_fetches_lists_and_marks_applied(jobs_db, monkeypatch):
+def test_jobs_page_fetches_filters_and_tailors(jobs_db, monkeypatch):
     from streamlit.testing.v1 import AppTest
 
-    from jobpilot import db, runs
-    from jobpilot.models import Event, Job
+    from jobpilot import runs
 
     started = []
     monkeypatch.setattr(runs, "start", lambda stage, args=None: started.append((stage, args)) or
@@ -77,18 +76,78 @@ def test_jobs_page_fetches_lists_and_marks_applied(jobs_db, monkeypatch):
     at = AppTest.from_file(APP, default_timeout=30).run()
     assert not at.exception
     assert at.title[0].value == "Jobs"
-    assert at.dataframe[0].value.shape[0] == 3
-    assert next(b for b in at.button if b.label.startswith("Tailor resume")).disabled  # nothing ticked
+    assert at.dataframe[0].value.shape[0] == 2  # the screened-out job is hidden...
+    at.checkbox(key="jobs-screened").check().run()
+    assert at.dataframe[0].value.shape[0] == 3  # ...until asked for
+    tailor = next(b for b in at.button if b.label.startswith("✨ Tailor resume"))
+    assert tailor.disabled  # nothing ticked yet
 
     at.text_input(key="jobs-q").input("platform").run()
     assert list(at.dataframe[0].value["title"]) == ["Platform Engineer"]
+    at.text_input(key="jobs-q").input("").run()
+    at.multiselect(key="jobs-type").select("Backend").run()
+    assert list(at.dataframe[0].value["title"]) == ["Backend Engineer"]
 
     next(b for b in at.button if b.label == "Fetch openings").click().run()
     assert started == [("fetch", ["--no-hn"])]
 
-    # Ready to apply: the tailored job, with its resume and an "I applied" button.
-    next(b for b in at.button if b.label == "I applied").click().run()
+
+def test_ready_page_applies_and_writes_missing_cover_letters(jobs_db, monkeypatch):
+    from streamlit.testing.v1 import AppTest
+
+    from jobpilot import db, runs
+    from jobpilot.models import Event, Job
+
+    started = []
+    monkeypatch.setattr(runs, "start", lambda stage, args=None: started.append((stage, args)) or
+                        type("R", (), {"id": 1})())
+    at = AppTest.from_file(APP, default_timeout=30).run()
+    at.sidebar.radio(key="nav").set_value("Ready to apply").run()
+    assert not at.exception
+    assert at.title[0].value == "Ready to apply"
+    assert any(b.label == "⬇ Resume PDF" for b in at.get("download_button"))
+
+    # The fixture's letter exists only as text, not a PDF: offer to write one.
+    next(b for b in at.button if b.label == "✨ Write cover letter").click().run()
+    assert started == [("tailor", ["--job", str(jobs_db["c"]), "--cover-letter"])]
+
+    next(b for b in at.button if b.label == "✅ I applied").click().run()
     assert not at.exception
     with db.session() as sess:
         assert sess.get(Job, jobs_db["c"]).status == "submitted"
         assert sess.exec(select(Event).where(Event.type == "applied_manually")).first() is not None
+
+
+def test_screen_rules_and_rescreen_are_reversible(jobs_db):
+    from jobpilot import config, db
+    from jobpilot.filters.screen import rescreen, role_types, seniority, years_required
+    from jobpilot.models import Job
+
+    assert role_types("Generative AI, Backend Engineer") == ["Backend", "ML / AI"]
+    assert role_types("Software Engineer II") == ["Software (general)"]
+    assert (seniority("Senior Software Engineer"), seniority("Software Engineer I"),
+            seniority("Staff Platform Engineer"), seniority("Engineering Manager")) == \
+        ("Senior", "Entry / new grad", "Staff+", "Manager")
+    assert years_required("3-5 years of experience; 7+ years of professional software experience") == 7
+    assert years_required("a company with 150 years of history") is None
+
+    config.save_filters({"title_include": [], "title_exclude": ["sales"], "locations_allow": [],
+                         "companies_exclude": [], "max_years_experience": 0, "drop_sponsorship_blockers": True})
+    report = rescreen()
+    with db.session() as sess:
+        b, c = sess.get(Job, jobs_db["b"]), sess.get(Job, jobs_db["c"])
+        assert b.status == "filtered_out" and b.filter_reason == "title: excluded keyword 'sales'"
+        assert c.status == "new"  # no location, but it has a tailored resume: never screened
+    assert report.reasons["title"] == 1
+
+    # Loosen the filters: the job comes straight back, nothing was deleted.
+    config.save_filters({"title_include": [], "title_exclude": [], "locations_allow": [],
+                         "drop_sponsorship_blockers": False})
+    assert rescreen().restored == 1
+    with db.session() as sess:
+        assert sess.get(Job, jobs_db["b"]).status == "new"
+
+    config.save_filters({"title_include": [], "locations_allow": [], "companies_exclude": ["Acme"]})
+    rescreen()
+    with db.session() as sess:
+        assert sess.get(Job, jobs_db["a"]).filter_reason == "company: 'Acme' excluded"

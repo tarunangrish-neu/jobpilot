@@ -52,26 +52,34 @@ Then fill in:
 make                                 # set up anything missing, then open the UI
 ```
 
-The UI opens on the **Jobs** page, which skips the filter and rank stages (and their LLM
-calls) entirely:
+The UI opens on the **Jobs** page. No filter or rank stage, and no LLM until you tailor:
 
-1. **Fetch openings** pulls every board in `companies.yaml`, all boards in parallel with
-   at least 1 s between requests to the same site. A cold fetch of ~280 boards takes ~5
-   minutes (the slowest single site, Microsoft's, needs ~240 requests); within the 6 h
-   cache window it takes about a minute.
-2. **Openings** is one table of every fetched job, newest first, cross-posts collapsed.
-   Search, "posted within", status, "hide sponsorship blockers" (a `visa.blocking_phrases`
-   match), and "only my title/location rules" narrow it instantly; none of them call the LLM.
-   Each row has an **Apply ↗** link to the posting on the company's site.
-3. Tick rows and **Tailor resume + cover letter**: one background run, about half a
-   minute per job on local Ollama.
-4. **Ready to apply** has, per tailored job, the Apply button, resume and cover-letter
-   downloads, the letter as copyable text, and **I applied** (marks it submitted) or **Skip**.
+1. **Fetch openings** pulls every board in `companies.yaml` in parallel (at least 1 s between
+   requests to the same site; a cold fetch of ~280 boards takes ~5 minutes, about a minute
+   within the 6 h cache window), then **screens** every job with your fetch filters.
+2. **⚙️ Fetch filters** (under the Fetch button) edits those filters and re-screens every
+   fetched job in seconds, with no network or LLM: title contains / doesn't contain,
+   allowed locations, remote-anywhere, posted within N days, max years of experience the
+   description asks for, companies to skip, description phrases to skip (e.g. "security
+   clearance"), and sponsorship blockers. They are saved to `config/filters.yaml`
+   (gitignored), which overrides `filters:` in settings.yaml. Screened-out jobs are only
+   hidden, never deleted, so loosening a filter brings them back; jobs you tailored,
+   applied to, or skipped are never screened. `jobpilot screen` does the same from a terminal.
+3. **Openings** is one table of what passed, newest first, cross-posts collapsed, with an
+   **Apply ↗** link per row. It narrows instantly by search, posted within, role type
+   (Backend, Full-stack, Infra/Platform/SRE, ML/AI, Data, ...), level (Entry, Mid, Senior,
+   Staff+, Lead, Manager), company, years of experience asked, sponsorship blockers,
+   "not tailored yet", and can show screened-out jobs with the reason.
+4. **Tick rows** and click **✨ Tailor resume + cover letter** (the bar above the table):
+   one background run, ~45 s per job on local Ollama, live log at the top of the page.
+5. **Ready to apply** (sidebar, with a count) lists every tailored job: **Apply on company
+   site ↗**, resume and cover-letter PDF downloads, a resume preview, the letter as copyable
+   text, **Write cover letter** (or all missing ones at once) for jobs tailored without one,
+   **Re-tailor from scratch**, and **✅ I applied** / **Skip**.
 
-Runs show their live log on the page and only one runs at a time, including ones started
-from a terminal. The old flow — Pipeline (filter, rank, dry-run and prefill cards), Review
-queue (approve & submit), Manual apply — is behind **Show the old auto-fill pipeline** in
-the sidebar.
+Only one run (fetch or tailor) goes at a time, including ones started from a terminal. The
+old flow — Pipeline (filter, rank, dry-run and prefill cards), Review queue (approve &
+submit), Manual apply — is behind **Show the old auto-fill pipeline** in the sidebar.
 
 Without the UI: `uv run jobpilot run-daily --top 30` (never submits), then `uv run jobpilot ui`.
 
@@ -83,7 +91,8 @@ reloads it after a code change, `make ui-stop` stops it; `PORT=` picks another p
 Or stage by stage:
 
 ```bash
-uv run jobpilot fetch [--hn]         # pull every active board (and HN if enabled)
+uv run jobpilot fetch [--hn]         # pull every active board (and HN if enabled), then screen
+uv run jobpilot screen               # re-apply your filters to fetched jobs (no network, no LLM)
 uv run jobpilot filter               # dedupe, title/location/age rules, visa screen
 uv run jobpilot score                # embed + LLM rerank; prints the ranked table
 uv run jobpilot tailor --top 30      # tailored resume PDFs, master length (+ --cover-letter)

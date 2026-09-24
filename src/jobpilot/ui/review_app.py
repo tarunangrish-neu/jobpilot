@@ -562,7 +562,9 @@ def pipeline_page() -> None:
 
 # One tailor run at a time is ~half a minute per job on local Ollama (resume + cover letter).
 MAX_TAILOR = 25
-POSTED_WITHIN = {"Any time": None, "Last 24 hours": 1, "Last 7 days": 7, "Last 30 days": 30}
+POSTED_WITHIN = {"Any time": None, "Last 24 hours": 1, "Last 3 days": 3, "Last 7 days": 7, "Last 30 days": 30}
+YEARS_ASKED = {"Any": None, "≤ 1 year": 1, "≤ 2 years": 2, "≤ 3 years": 3, "≤ 5 years": 5}
+READY = "Ready to apply"
 
 
 @st.cache_data(ttl=600, show_spinner="Loading openings...")
@@ -584,15 +586,73 @@ def _activity(polling: bool) -> None:
 _activity_live = st.fragment(run_every=3)(_activity)
 
 
+def _live_activity() -> bool:
+    """Show the running fetch/tailor, if any; True when new runs must wait."""
+    from jobpilot import runs
+
+    reason = runs.busy()
+    (_activity_live if reason else _activity)(polling=bool(reason))
+    return bool(reason)
+
+
 def _start(stage: str, args: list[str]) -> None:
     from jobpilot import runs
 
     try:
         run = runs.start(stage, args)
-        st.session_state["flash"] = f"Started {stage} (run #{run.id})"
+        st.session_state["flash"] = f"Started {stage} (run #{run.id}); its log is at the top of the page."
     except RuntimeError as exc:
         st.session_state["flash"] = f"⚠️ {exc}"
     st.rerun()
+
+
+def _go_ready() -> None:
+    st.session_state["nav"] = READY
+
+
+def _lines(text: str) -> list[str]:
+    return [ln.strip() for ln in text.replace(",", "\n").splitlines() if ln.strip()]
+
+
+def _filters_editor(paused: bool) -> None:
+    cur = actions.current_filters()
+    names = sorted(set(actions.company_names()) | set(cur["companies_exclude"]))
+    with st.expander("⚙️ **Fetch filters**: applied after every fetch, no LLM. Edit and re-screen any time."):
+        with st.form("fetch-filters", border=False):
+            left, right = st.columns(2)
+            include = left.text_area("Title contains one of", "\n".join(cur["title_include"]), height=150,
+                                     help="One per line (or comma-separated). Empty means any title.")
+            exclude = right.text_area("Title contains none of", "\n".join(cur["title_exclude"]), height=150,
+                                      help="e.g. senior, staff, intern, sales.")
+            locations = left.text_area("Allowed locations", "\n".join(cur["locations_allow"]), height=150,
+                                       help="One per line. 'united states' / 'usa' / 'us' also allow any US state; "
+                                            "'remote' allows a bare 'Remote'.")
+            description = right.text_area("Skip jobs whose description mentions", "\n".join(cur["description_exclude"]),
+                                          height=150, help="e.g. security clearance, polygraph, 10+ years.")
+            companies = st.multiselect("Skip these companies", names, default=cur["companies_exclude"])
+            age, years, flags = st.columns(3, vertical_alignment="bottom")
+            max_age = age.number_input("Posted within (days, 0 = any)", 0, 365, int(cur["max_posting_age_days"] or 0))
+            max_years = years.number_input("Max years of experience asked (0 = any)", 0, 20,
+                                           int(cur["max_years_experience"] or 0),
+                                           help="Uses phrases like '5+ years of experience' in the description; "
+                                                "jobs that never say are kept.")
+            drop_blocked = flags.checkbox("Skip sponsorship blockers", bool(cur["drop_sponsorship_blockers"]),
+                                          help="Descriptions with a visa.blocking_phrases match, e.g. 'will not sponsor'.")
+            remote_any = flags.checkbox("Keep remote jobs anywhere", bool(cur["allow_remote_anywhere"]),
+                                        help="Off: 'Remote - EU' is dropped unless the location is allowed.")
+            saved = st.form_submit_button("Save filters & re-screen jobs", type="primary", disabled=paused)
+    if saved:
+        with st.spinner("Re-screening every fetched job (no network, no LLM)..."):
+            report = actions.save_filters_and_rescreen({
+                "title_include": _lines(include), "title_exclude": _lines(exclude),
+                "locations_allow": _lines(locations), "allow_remote_anywhere": remote_any,
+                "max_posting_age_days": int(max_age), "max_years_experience": int(max_years),
+                "companies_exclude": companies, "description_exclude": _lines(description),
+                "drop_sponsorship_blockers": drop_blocked,
+            })
+        st.session_state["flash"] = (f"Filters saved: {report.passed:,} jobs pass, "
+                                     f"{report.considered - report.passed:,} screened out.")
+        st.rerun()
 
 
 def _fetch_card(paused: bool) -> None:
@@ -600,77 +660,140 @@ def _fetch_card(paused: bool) -> None:
         go, opts = st.columns([1, 3], vertical_alignment="center")
         hn = opts.checkbox("Include HN Who's Hiring (slow: ~1 LLM call per comment)", key="opt-fetch-hn")
         opts.caption("Every board in companies.yaml, fetched in parallel (≥1 s between requests to the same "
-                     "site). Responses are cached for 6 h, so fetching again within that window takes seconds.")
+                     "site), then screened with your fetch filters. Responses are cached for 6 h.")
         if go.button("Fetch openings", key="run-fetch", type="primary", disabled=paused, width="stretch"):
             _start("fetch", ["--hn" if hn else "--no-hn"])
+        _filters_editor(paused)
 
 
-def _filtered(rows: list[dict]) -> tuple[list[dict], tuple]:
-    """The table's own filters: plain text matching, nothing that calls the LLM.
+def _filtered(rows: list[dict]) -> tuple[list[dict], tuple, bool]:
+    """The table's own filters, instant and without the LLM.
 
-    Returns the matching rows and the filter settings that produced them.
+    Returns the matching rows, the settings that produced them, and whether
+    screened-out jobs are shown.
     """
     from datetime import date, timedelta
 
-    from jobpilot import config
-    from jobpilot.filters.rules import check_location, check_title
+    from jobpilot.filters.screen import LEVELS, ROLE_TYPES
 
-    search, when, status, flags = st.columns([3, 1.2, 2, 2], vertical_alignment="bottom")
-    words = search.text_input("Search", key="jobs-q", placeholder="title, company, or location, e.g. backend new york").lower().split()
+    search, when, kind, level = st.columns([3, 1.3, 2, 2], vertical_alignment="bottom")
+    words = search.text_input("Search", key="jobs-q",
+                              placeholder="title, company, or location, e.g. backend new york").lower().split()
     days = POSTED_WITHIN[when.selectbox("Posted", list(POSTED_WITHIN), key="jobs-age")]
-    present = sorted({r["status"] for r in rows})
-    default = [s for s in present if s not in actions.DONE_STATUSES]
-    statuses = set(status.multiselect("Status", present, default=default, key="jobs-status"))
-    hide_blocked = flags.checkbox("Hide sponsorship blockers", key="jobs-noblock")
-    my_rules = flags.checkbox("Only my title/location rules", key="jobs-rules",
-                              help="The title_include / title_exclude / locations_allow lists in settings.yaml.")
+    kinds = set(kind.multiselect("Role type", [n for n, _ in ROLE_TYPES] + ["Other"], key="jobs-type",
+                                 placeholder="Any role"))
+    levels = set(level.multiselect("Level", LEVELS, key="jobs-level", placeholder="Any level"))
+    company, years, flags1, flags2 = st.columns([3, 1.3, 2, 2], vertical_alignment="bottom")
+    companies = set(company.multiselect("Company", sorted({r["company"] for r in rows if r["company"]}),
+                                        key="jobs-company", placeholder="Any company"))
+    max_years = YEARS_ASKED[years.selectbox("Experience asked", list(YEARS_ASKED), key="jobs-years",
+                                            help="Jobs whose description never states years are kept.")]
+    hide_blocked = flags1.checkbox("Hide sponsorship blockers", key="jobs-noblock")
+    untailored = flags1.checkbox("Not tailored yet", key="jobs-untailored")
+    show_screened = flags2.checkbox("Show screened-out jobs", key="jobs-screened",
+                                    help="Jobs your fetch filters dropped; the reason is in 'Screened out because'.")
+    show_done = flags2.checkbox("Show applied / skipped", key="jobs-done")
 
     cutoff = date.today() - timedelta(days=days) if days else None
-    cfg = config.settings().get("filters", {})
     out = []
     for r in rows:
-        if r["status"] not in statuses or (hide_blocked and r["sponsorship"]):
+        if r["status"] == "filtered_out" and not show_screened:
+            continue
+        if r["status"] in actions.DONE_STATUSES and not show_done:
+            continue
+        if (hide_blocked and r["sponsorship"]) or (untailored and r["tailored"]):
             continue
         if cutoff and (r["posted"] is None or r["posted"] < cutoff):
+            continue
+        if kinds and not kinds & set(r["type"].split(", ")):
+            continue
+        if levels and r["level"] not in levels:
+            continue
+        if companies and r["company"] not in companies:
+            continue
+        if max_years is not None and r["years"] is not None and r["years"] > max_years:
             continue
         if words:
             haystack = f"{r['title']} {r['company']} {r['location']}".lower()
             if not all(w in haystack for w in words):
                 continue
-        if my_rules and (check_title(r["title"], cfg) or check_location(r["location"], r["remote"], cfg)):
-            continue
         out.append(r)
-    return out, (tuple(words), days, tuple(sorted(statuses)), hide_blocked, my_rules)
+    settings = (tuple(words), days, tuple(sorted(kinds)), tuple(sorted(levels)), tuple(sorted(companies)),
+                max_years, hide_blocked, untailored, show_screened, show_done)
+    return out, settings, show_screened
 
 
 def _openings_table(paused: bool) -> None:
     rows = _openings(_root(), actions.jobs_version())
-    view, settings = _filtered(rows)
-    st.caption(f"{len(view):,} of {len(rows):,} openings, newest first. Tick rows to tailor them; "
-               "**Apply ↗** opens the posting on the company's site.")
-    # The key follows the filters, so a ticked row can't silently point at a different job.
+    view, settings, show_screened = _filtered(rows)
+    # Filled in after the table, but shown above it: the button is the next step, so keep it in view.
+    bar = st.container(border=True)
+    columns = ["apply", "company", "title", "type", "level", "years", "location", "posted", "tailored",
+               "sponsorship"] + (["why_hidden"] if show_screened else []) + ["status"]
     table = st.dataframe(
-        view, hide_index=True, width="stretch", height=460, on_select="rerun", selection_mode="multi-row",
-        key=f"jobs-table-{hash(settings)}",
-        column_order=("apply", "company", "title", "location", "posted", "tailored", "sponsorship", "status"),
+        view, hide_index=True, width="stretch", height=520, on_select="rerun", selection_mode="multi-row",
+        key=f"jobs-table-{hash(settings)}", column_order=columns,
         column_config={
             "apply": st.column_config.LinkColumn("Apply", display_text="Apply ↗", width="small"),
             "company": st.column_config.TextColumn("Company"),
-            "title": st.column_config.TextColumn("Role", width=360),
+            "title": st.column_config.TextColumn("Role", width=320),
+            "type": st.column_config.TextColumn("Type"),
+            "level": st.column_config.TextColumn("Level", width="small"),
+            "years": st.column_config.NumberColumn("Yrs asked", width="small",
+                                                   help="Most years of experience the description asks for."),
             "location": st.column_config.TextColumn("Location"),
             "posted": st.column_config.DateColumn("Posted", width="small"),
             "tailored": st.column_config.CheckboxColumn("Tailored", width="small"),
             "sponsorship": st.column_config.TextColumn("Sponsorship", help="A visa.blocking_phrases hit in the description."),
+            "why_hidden": st.column_config.TextColumn("Screened out because"),
             "status": st.column_config.TextColumn("Status", width="small"),
         },
     )
     picked = [view[i]["id"] for i in table.selection.rows]
-    go, note = st.columns([1, 3], vertical_alignment="center")
-    if go.button(f"Tailor resume + cover letter ({len(picked)})", key="tailor-picked", type="primary",
-                 disabled=paused or not picked or len(picked) > MAX_TAILOR, width="stretch"):
-        _start("tailor", actions.tailor_args(picked))
-    note.caption(f"About half a minute per job with local Ollama; up to {MAX_TAILOR} per run. "
-                 "Tailored files show up under **Ready to apply** below.")
+    with bar:
+        go, note = st.columns([1.4, 3], vertical_alignment="center")
+        label = f"✨ Tailor resume + cover letter for {len(picked)} job{'s' if len(picked) != 1 else ''}"
+        if go.button(label, key="tailor-picked", type="primary", width="stretch",
+                     disabled=paused or not picked or len(picked) > MAX_TAILOR):
+            _start("tailor", actions.tailor_args(picked))
+        if not picked:
+            note.markdown(f"**{len(view):,}** of {len(rows):,} openings. **Tick the box at the left of a row** to "
+                          "pick it, then tailor. **Apply ↗** opens the posting on the company's site.")
+        elif len(picked) > MAX_TAILOR:
+            note.warning(f"{len(picked)} ticked; tailor at most {MAX_TAILOR} per run.")
+        else:
+            note.markdown(f"{len(picked)} ticked · about {len(picked) * 45 // 60 or 1} min with local Ollama. "
+                          f"The results appear on **{READY}**.")
+    if picked:
+        d = actions.detail(picked[-1])
+        if d is not None:
+            with st.expander(f"Job description: {d.job.title} — {d.company.name if d.company else ''}"):
+                st.markdown(_plain(d.job.description_text) if d.job.description_text else "_No description._")
+
+
+def jobs_page() -> None:
+    st.title("Jobs")
+    st.caption("① Fetch → ② tick the openings you want → ③ **Tailor resume + cover letter** → "
+               f"④ apply from **{READY}** with your tailored files.")
+    if flash := st.session_state.pop("flash", None):
+        st.toast(flash)
+    _setup_checks()
+    paused = _live_activity()
+    _fetch_card(paused)
+
+    ready = actions.ready_to_apply()
+    if ready:
+        covers = sum(1 for r in ready if r["cover_letter"])
+        note, go = st.columns([3, 1], vertical_alignment="center")
+        note.success(f"**{len(ready)}** tailored job{'s are' if len(ready) != 1 else ' is'} ready to apply "
+                     f"({covers} with a cover letter).")
+        go.button("Open Ready to apply →", on_click=_go_ready, width="stretch", type="primary")
+
+    st.subheader("Openings")
+    _openings_table(paused)
+
+
+# --- Ready to apply ---------------------------------------------------------------
 
 
 def _download(col, label: str, path: str, key: str) -> None:
@@ -681,65 +804,96 @@ def _download(col, label: str, path: str, key: str) -> None:
         col.caption(f"{label}: file missing")
 
 
-@st.fragment
-def _ready_section() -> None:
+def ready_page() -> None:
+    st.title(READY)
+    st.caption("Your tailored resume and cover letter per job. Open the posting, apply on the company's "
+               "site with these files, then mark it applied.")
+    if flash := st.session_state.pop("flash", None):
+        st.toast(flash)
+    paused = _live_activity()
     ready = actions.ready_to_apply()
     if not ready:
-        st.info("Nothing tailored yet. Tick openings above and tailor them.")
+        st.info("Nothing tailored yet. On **Jobs**, tick the openings you want and click "
+                "**Tailor resume + cover letter**.")
         return
+
     by_id = {r["id"]: r for r in ready}
-    job_id = st.selectbox("Job", list(by_id), key="ready-job",
-                          format_func=lambda i: f"{by_id[i]['company']} — {by_id[i]['title']} ({by_id[i]['location'] or 'n/a'})")
+    ids = list(by_id)
+    missing = [r["id"] for r in ready if not r["cover_letter"]]
+    if missing:
+        note, go = st.columns([3, 1.3], vertical_alignment="center")
+        note.info(f"{len(missing)} of these have no cover letter yet (tailored before letters were written by "
+                  f"default). Each takes ~15 s; up to {MAX_TAILOR} per run.")
+        batch = missing[:MAX_TAILOR]
+        if go.button(f"✨ Write {len(batch)} missing cover letter{'s' if len(batch) != 1 else ''}", key="covers-missing", disabled=paused,
+                     width="stretch"):
+            _start("tailor", actions.tailor_args(batch))
+
+    def pick_from_table() -> None:
+        rows = st.session_state["ready-table"].selection.rows
+        if rows:
+            st.session_state["ready-job"] = ids[rows[0]]
+
+    st.dataframe(
+        [{**r, "has_cover": bool(r["cover_letter"])} for r in ready], hide_index=True, width="stretch",
+        height=min(36 * (len(ready) + 1) + 3, 320), on_select=pick_from_table, selection_mode="single-row",
+        key="ready-table", column_order=("apply", "company", "title", "location", "has_cover"),
+        column_config={
+            "apply": st.column_config.LinkColumn("Apply", display_text="Apply ↗", width="small"),
+            "company": st.column_config.TextColumn("Company"),
+            "title": st.column_config.TextColumn("Role", width=380),
+            "location": st.column_config.TextColumn("Location"),
+            "has_cover": st.column_config.CheckboxColumn("Cover letter", width="small"),
+        },
+    )
+    if st.session_state.get("ready-job") not in by_id:
+        st.session_state.pop("ready-job", None)
+    job_id = st.selectbox("Job", ids, key="ready-job",
+                          format_func=lambda i: f"{by_id[i]['company']} — {by_id[i]['title']}")
     r = by_id[job_id]
+
+    st.subheader(f"{r['title']} — {r['company']}")
+    st.caption(f"📍 {r['location'] or 'location not stated'} · job #{job_id}")
     apply_col, resume_col, cover_col, done_col, skip_col = st.columns(5)
     apply_col.link_button("Apply on company site ↗", r["apply"] or "about:blank", type="primary",
                           disabled=not r["apply"], width="stretch")
-    _download(resume_col, "Download resume", r["resume"], f"dl-resume-{job_id}")
+    _download(resume_col, "⬇ Resume PDF", r["resume"], f"dl-resume-{job_id}")
     if r["cover_letter"]:
-        _download(cover_col, "Download cover letter", r["cover_letter"], f"dl-cover-{job_id}")
-    else:
-        cover_col.caption("No cover letter (every draft failed the fabrication check, or none was asked for).")
-    if done_col.button("I applied", key=f"applied-{job_id}", width="stretch"):
+        _download(cover_col, "⬇ Cover letter PDF", r["cover_letter"], f"dl-cover-{job_id}")
+    elif cover_col.button("✨ Write cover letter", key=f"cover-{job_id}", disabled=paused, width="stretch",
+                          help="The resume plan is cached, so this only pays for the letter (~15 s)."):
+        _start("tailor", actions.tailor_args([job_id]))
+    if done_col.button("✅ I applied", key=f"applied-{job_id}", width="stretch"):
         actions.mark_applied_manually(job_id)
-        st.rerun(scope="app")
+        st.session_state["flash"] = f"Marked {r['company']} — {r['title']} as applied."
+        st.rerun()
     if skip_col.button("Skip", key=f"ready-skip-{job_id}", width="stretch"):
         actions.skip(job_id)
-        st.rerun(scope="app")
-    if r["cover_letter_text"]:
-        with st.expander("Cover letter text (for forms with a text box)"):
-            st.code(r["cover_letter_text"], language=None, wrap_lines=True)
-    with st.expander("Resume preview"):
+        st.rerun()
+
+    resume_tab, cover_tab, job_tab = st.tabs(["📄 Resume", "✉️ Cover letter", "🧾 Job description"])
+    with resume_tab:
         png = actions.resume_preview(job_id)
         if png:
             st.image(str(png), width="stretch")
         else:
-            st.caption("No preview available.")
+            st.caption("No preview available; download the PDF above.")
+        if st.button("Re-tailor from scratch", key=f"regen-{job_id}", disabled=paused,
+                     help="Ignores the cached plan and asks the model again (~45 s)."):
+            _start("tailor", actions.tailor_args([job_id]) + ["--regenerate"])
+    with cover_tab:
+        if r["cover_letter_text"]:
+            st.caption("Copy it into the form's text box, or upload the PDF.")
+            st.code(r["cover_letter_text"], language=None, wrap_lines=True)
+        else:
+            st.info("No cover letter yet: click **Write cover letter** above. Sentences the fabrication check "
+                    "can't verify against your resume are dropped, so letters are short and factual.")
+    with job_tab:
+        d = actions.detail(job_id)
+        st.markdown(_plain(d.job.description_text) if d and d.job.description_text else "_No description._")
 
 
-def jobs_page() -> None:
-    from jobpilot import runs
-
-    st.title("Jobs")
-    st.caption("Fetch every opening, tick the ones you want, tailor a resume and cover letter for them, "
-               "then apply on the company's site yourself.")
-    if flash := st.session_state.pop("flash", None):
-        st.toast(flash)
-    _setup_checks()
-
-    reason = runs.busy()
-    (_activity_live if reason else _activity)(polling=bool(reason))
-    if reason:
-        st.caption(f"Fetch and tailor are paused: {reason}.")
-    _fetch_card(paused=bool(reason))
-
-    st.subheader("Openings")
-    _openings_table(paused=bool(reason))
-
-    st.subheader("Ready to apply")
-    _ready_section()
-
-
-PAGES = {"Jobs": jobs_page, "Stats": stats_page}
+PAGES = {"Jobs": jobs_page, READY: ready_page, "Stats": stats_page}
 # The rank / prefill / approve-and-submit flow, kept for anyone who still wants it.
 OLD_PAGES = {"Pipeline": pipeline_page, "Review queue": queue_page, "Manual apply": manual_page}
 with st.sidebar:
@@ -747,6 +901,10 @@ with st.sidebar:
     st.caption("Find openings, tailor your resume and cover letter, apply yourself.")
     old = st.toggle("Show the old auto-fill pipeline", key="show-old")
     pages = {**PAGES, **(OLD_PAGES if old else {})}
-    page = st.radio("View", list(pages))
+    if st.session_state.get("nav") not in pages:
+        st.session_state["nav"] = "Jobs"
+    n_ready = len(actions.ready_to_apply())
+    page = st.radio("View", list(pages), key="nav",
+                    format_func=lambda p: f"{p} ({n_ready})" if p == READY else p)
     st.divider()
 pages[page]()

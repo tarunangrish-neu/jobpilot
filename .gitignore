@@ -1,6 +1,7 @@
 # Personal data and secrets
 .env
 config/answers.yaml
+config/filters.yaml
 
 # Generated / local state
 data/
