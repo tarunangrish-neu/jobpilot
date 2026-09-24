@@ -1,0 +1,280 @@
+{
+ "total": 110,
+ "jobPostings": [
+  {
+   "title": "Defined Benefit Configuration Analyst",
+   "externalPath": "/job/Covington-KY/Defined-Benefit-Configuration-Analyst_2129661-1",
+   "locationsText": "Covington, KY",
+   "postedOn": "Posted 26 Days Ago",
+   "bulletFields": [
+    "2129661"
+   ]
+  },
+  {
+   "title": "Vice President, Fidelity Digital Assets India",
+   "externalPath": "/job/Bangalore-Karnataka/Vice-President--Fidelity-Digital-Assets-India_2134550-3",
+   "locationsText": "Bangalore, Karnataka",
+   "postedOn": "Posted Today",
+   "bulletFields": [
+    "2134550"
+   ]
+  },
+  {
+   "title": "Senior Full Stack Engineer",
+   "externalPath": "/job/Dublin-Ireland/Senior-Full-Stack-Engineer_2135464-2",
+   "locationsText": "Dublin, Ireland",
+   "postedOn": "Posted Today",
+   "bulletFields": [
+    "2135464"
+   ]
+  }
+ ],
+ "facets": [
+  {
+   "facetParameter": "jobFamilyGroup",
+   "descriptor": "Job Category",
+   "values": [
+    {
+     "descriptor": "Information Technology",
+     "id": "e39fd413f80c0104eb5775256a997b12",
+     "count": 102
+    },
+    {
+     "descriptor": "Data Analytics and Insights",
+     "id": "4c9bbf7088c401011719f359748d0000",
+     "count": 2
+    },
+    {
+     "descriptor": "Administration",
+     "id": "e39fd413f80c01eb25bc04256a994d12",
+     "count": 2
+    },
+    {
+     "descriptor": "Investment Professionals",
+     "id": "e39fd413f80c01250c3e86256a998112",
+     "count": 2
+    },
+    {
+     "descriptor": "Real Estate",
+     "id": "e39fd413f80c0179c10dc2256a999912",
+     "count": 1
+    },
+    {
+     "descriptor": "Operations",
+     "id": "e39fd413f80c0156dc58a0256a998b12",
+     "count": 1
+    }
+   ]
+  },
+  {
+   "facetParameter": "timeType",
+   "descriptor": "Time Type",
+   "values": [
+    {
+     "descriptor": "Full time",
+     "id": "06f28e2f28c601248ec56b994b994d00",
+     "count": 110
+    }
+   ]
+  },
+  {
+   "facetParameter": "locationMainGroup",
+   "values": [
+    {
+     "facetParameter": "locationCountry",
+     "descriptor": "Country",
+     "values": [
+      {
+       "descriptor": "India",
+       "id": "c4f78be1a8f14da0ab49ce1162348a5e",
+       "count": 3
+      },
+      {
+       "descriptor": "Ireland",
+       "id": "04a05835925f45b3a59406a2a6b72c8a",
+       "count": 10
+      },
+      {
+       "descriptor": "United Kingdom",
+       "id": "29247e57dbaf46fb855b224e03170bc7",
+       "count": 1
+      },
+      {
+       "descriptor": "United States of America",
+       "id": "bc33aa3152ec42d4995f4791a106ed09",
+       "count": 95
+      }
+     ]
+    },
+    {
+     "facetParameter": "locationRegionStateProvince",
+     "descriptor": "Region/State/Province",
+     "values": [
+      {
+       "descriptor": "Colorado",
+       "id": "a83d6eabae3b49718c4ce09eeb66fd0b",
+       "count": 3
+      },
+      {
+       "descriptor": "Dublin",
+       "id": "deaadda0e7dc4726a28d1221725f3de5",
+       "count": 4
+      },
+      {
+       "descriptor": "Galway",
+       "id": "2d7df92d17624a658b8093f81b2e0124",
+       "count": 6
+      },
+      {
+       "descriptor": "Illinois",
+       "id": "d8bb292ed9fe44a2899a990ad569538c",
+       "count": 3
+      },
+      {
+       "descriptor": "Karn\u0101taka",
+       "id": "701eb5584934425d930bc84b9e8b04eb",
+       "count": 3
+      },
+      {
+       "descriptor": "Kentucky",
+       "id": "66d386e70a2946b695835e59cebcd7b2",
+       "count": 3
+      },
+      {
+       "descriptor": "London",
+       "id": "d9bbc5c4067649ecbf64c920864362a9",
+       "count": 1
+      },
+      {
+       "descriptor": "Massachusetts",
+       "id": "c66d738416b74fb180376cf59cc7ec8f",
+       "count": 8
+      },
+      {
+       "descriptor": "New Hampshire",
+       "id": "9efc91fd842142a0b0bf455e723b65a0",
+       "count": 4
+      },
+      {
+       "descriptor": "New Jersey",
+       "id": "9b56fe16bdf74b2cbad8b644cdf6015a",
+       "count": 11
+      },
+      {
+       "descriptor": "North Carolina",
+       "id": "1486a0a4a8464c3b9ec482d4038deb99",
+       "count": 35
+      },
+      {
+       "descriptor": "Texas",
+       "id": "fc77e3a1ab36487f9646d14f7242dd77",
+       "count": 32
+      },
+      {
+       "descriptor": "Utah",
+       "id": "9bf006cfb5a44c51b84138e1a0e7d805",
+       "count": 1
+      }
+     ]
+    },
+    {
+     "facetParameter": "locations",
+     "descriptor": "Locations",
+     "values": [
+      {
+       "descriptor": "100 New Millennium Way, Bldg 1, Durham NC",
+       "id": "41f0d55c2513010270fb4015929bab11",
+       "count": 3
+      },
+      {
+       "descriptor": "100 New Millennium Way, Bldg 3, Durham NC",
+       "id": "793620411fa70100eb41ee1d992d0000",
+       "count": 1
+      },
+      {
+       "descriptor": "245 Summer St, Boston MA",
+       "id": "41f0d55c251301f79fa07314929bde10",
+       "count": 2
+      },
+      {
+       "descriptor": "25 Cannon St, London Great Britain",
+       "id": "41f0d55c2513012a80bf0a18929b7114",
+       "count": 1
+      },
+      {
+       "descriptor": "Bangalore, Karnataka",
+       "id": "b33f48abe42e0156a6e0336ebd01022f",
+       "count": 3
+      },
+      {
+       "descriptor": "Boston, MA",
+       "id": "b33f48abe42e01ede3f0236ebd01e42e",
+       "count": 6
+      },
+      {
+       "descriptor": "Chicago, IL",
+       "id": "b33f48abe42e01682b8b016ebd01ad2e",
+       "count": 3
+      },
+      {
+       "descriptor": "Covington, KY",
+       "id": "b33f48abe42e01c11836c56ebd011530",
+       "count": 3
+      },
+      {
+       "descriptor": "Denver, CO",
+       "id": "b33f48abe42e016d3741bd6ebd010630",
+       "count": 3
+      },
+      {
+       "descriptor": "Dublin, Ireland",
+       "id": "b33f48abe42e01fc5ae1ba6ebd010130",
+       "count": 4
+      },
+      {
+       "descriptor": "Durham, NC",
+       "id": "b33f48abe42e01278a0db96ebd01fc2f",
+       "count": 31
+      },
+      {
+       "descriptor": "Galway, Ireland",
+       "id": "b33f48abe42e01298addaf6ebd01e82f",
+       "count": 6
+      },
+      {
+       "descriptor": "Jersey City, NJ",
+       "id": "b33f48abe42e019505b7646ebd01572f",
+       "count": 11
+      },
+      {
+       "descriptor": "Merrimack, NH",
+       "id": "b33f48abe42e015186bf336fbd01e730",
+       "count": 4
+      },
+      {
+       "descriptor": "One Destiny Way, Westlake TX",
+       "id": "41f0d55c25130171a621e617929b4e14",
+       "count": 2
+      },
+      {
+       "descriptor": "Salt Lake City, UT",
+       "id": "b33f48abe42e01e655b2e66ebd014c30",
+       "count": 1
+      },
+      {
+       "descriptor": "Two Destiny Way, Westlake TX",
+       "id": "41f0d55c2513017fc979eb17929b5314",
+       "count": 1
+      },
+      {
+       "descriptor": "Westlake, TX",
+       "id": "b33f48abe42e0123ac92386fbd01f130",
+       "count": 29
+      }
+     ]
+    }
+   ]
+  }
+ ],
+ "userAuthenticated": false
+}

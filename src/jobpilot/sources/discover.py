@@ -4,7 +4,7 @@ import re
 from typing import Any, Optional
 from urllib.parse import urlparse
 
-from . import ashby, greenhouse, lever, recruitee, smartrecruiters, workable
+from . import amazon, ashby, eightfold, greenhouse, lever, oracle, recruitee, smartrecruiters, workable, workday
 
 # Board URL shapes seen in careers-page markup, embed scripts, and iframes.
 PATTERNS: list[tuple[str, re.Pattern[str]]] = [
@@ -21,6 +21,8 @@ PATTERNS: list[tuple[str, re.Pattern[str]]] = [
     ("smartrecruiters", re.compile(r"api\.smartrecruiters\.com/v1/companies/([a-z0-9_-]+)", re.I)),
     ("recruitee", re.compile(r"([a-z0-9-]+)\.recruitee\.com", re.I)),
 ]
+
+_LARGE = {"workday": workday, "amazon": amazon, "eightfold": eightfold, "oracle": oracle}
 
 # Words that appear in board URLs but are never tokens.
 _NOT_TOKENS = {"embed", "job_board", "jobs", "careers", "search", "v1", "v0", "boards", "api", "j", "apply", "www"}
@@ -79,6 +81,9 @@ def guess_from_domain(url: str) -> list[str]:
 
 async def verify(client, ats: str, token: str) -> Optional[int]:
     """Return the posting count if this board exists, else None."""
+    if ats in _LARGE:
+        # Large employer sites verify with their own search call (Workday is a POST).
+        return await _LARGE[ats].verify(client, token)
     adapter = _ADAPTERS[ats]
     status, payload = await client.get_json(adapter.BOARD_URL.format(token=token))
     if status != 200 or payload is None:

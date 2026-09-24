@@ -120,14 +120,46 @@ hn:
   max_comments: 80
   keywords: [backend, infrastructure, platform, rust, payments, distributed, founding engineer, ml infra, ai infra]
 
+discovery:
+  # Find new company boards with web-search queries; verified boards are appended to
+  # companies.yaml, then fetched from their official ATS APIs. Uses a search API (Google's
+  # result pages are never scraped). Free tiers: brave (BRAVE_API_KEY, ~2k queries/mo),
+  # google_cse (GOOGLE_CSE_KEY + GOOGLE_CSE_CX, ~100/day), serpapi (SERPAPI_API_KEY, ~100/mo;
+  # serpapi_engine: google_jobs searches Google Jobs listings). Keys go in .env.
+  enabled: false              # true = run the queries at the start of every `fetch`
+  provider: brave             # brave | google_cse | serpapi
+  serpapi_engine: google      # google | google_jobs (serpapi only)
+  max_results_per_query: 40
+  min_open_roles: 1
+  queries:
+    - 'site:jobs.ashbyhq.com "backend engineer" (payments OR stablecoin OR fintech)'
+    - 'site:boards.greenhouse.io "software engineer" (infrastructure OR platform) "New York"'
+    - 'site:jobs.lever.co "backend" (crypto OR blockchain OR payments)'
+    - 'site:jobs.ashbyhq.com ("ML infrastructure" OR "AI infrastructure" OR "inference")'
+    - 'site:job-boards.greenhouse.io "distributed systems" engineer remote US'
+
+large_boards:
+  # Workday / Amazon / Eightfold / Oracle career sites list thousands of roles, so they are
+  # searched by keyword instead of paged in full. Each term is one search per company.
+  search_terms: ["software engineer", "backend engineer", "platform engineer", "infrastructure engineer", "distributed systems"]
+  max_per_term: 200      # listings read per term per company
+  max_details: 150       # description fetches per company (after title/location rules)
+
 tailor:
-  max_bullets: 12              # upper bound; bullets are trimmed further until the PDF is one page
+  # Tailored resumes keep every master bullet (reordered, some rephrased) and only drop
+  # the lowest-ranked ones if they run longer than the full master resume renders.
+  max_bullets: 0               # 0 = no cap; set e.g. 12 for a shorter resume
+  # max_pages: 1               # force a page count instead of matching the master
+  # Bullets the model may rewrite per job (XYZ style, checked by tailor/verify.py). With
+  # qwen2.5:7b almost every rewrite of a long bullet gets rejected for dropping details;
+  # 0 skips rewriting (tailor call ~17s -> ~9s); a stronger model gets more out of it.
+  max_rephrasings: 0
   # auto: write a cover letter only when the application form has a cover-letter field
   # (generated during prefill). always / never override that.
   cover_letter: auto
   cover_letter_max_words: 200
 
 apply:
-  daily_submission_cap: 100
+  daily_submission_cap: 500
   answer_match_threshold: 0.85   # cosine similarity for mapping a form question to the answer bank
   headless: true

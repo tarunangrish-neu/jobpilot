@@ -1,0 +1,72 @@
+{
+ "jobPostingInfo": {
+  "id": "33400510893c1001a1d4aab42d0b0000",
+  "title": "Senior Software Engineer/Developer",
+  "jobDescription": "<h2></h2><h2>Job Description:</h2><p style=\"text-align:inherit\"></p><p><b>Note: Fidelity will not provide immigration sponsorship for this position.</b></p><p></p><p><b><u>Position Description</u></b>:</p><p></p><p>Designs software development using object-oriented programming languages (Java) and builds REST based micro services using Java and Spring Boot. Works with unit and integration test automation, using Junit and Mockito. Develops Amazon Web Services (AWS) and other Cloud platforms, and container orchestration technologies (Kubernetes). Develops resilient messaging services (Kafka, AWS Simple Notification Service (SNS), and AWS Simple Queue Service (SQS)). Provides business solutions by developing complex or multiple software applications.\u00a0</p><p></p><p><b><u>Primary Responsibilities:</u></b></p><p></p><ul><li>Develops original and creative technical solutions to on-going development efforts.</li><li>Designs applications or subsystems on major projects and for/in multiple platforms.</li><li>Develops applications for multiple projects supporting several divisional initiatives.</li><li>Supports and performs all phases of testing leading to implementation.</li><li>Assists in the planning and conducting of user acceptance testing.</li><li>Develops comprehensive documentation for multiple applications supporting several corporate initiatives.</li><li>Responsible for post-installation testing of any problems.</li><li>Establishes project plans for projects of moderate scope.</li><li>Works on complex assignments and often multiple phases of a project.</li><li>Performs independent and complex technical and functional analysis for multiple projects supporting several initiatives.</li></ul><p></p><p><b><u>Education and Experience</u></b>:</p><p></p><p>Bachelor\u2019s degree in Computer Science, Engineering, Information Technology, Information Systems, or a closely related field (or foreign education equivalent) and three (3) years of experience as a Senior Software Engineer/Developer (or closely related occupation) designing and implementing REST Application Programming Interfaces (APIs), using Spring Boot and .NETCORE.</p><p></p><p>Or, alternatively, Master\u2019s degree in Computer Science, Engineering, Information Technology, Information Systems, or a closely related field (or foreign education equivalent) and one (1) year of experience as a Senior Software Engineer/Developer (or closely related occupation) designing and implementing REST Application Programming Interfaces (APIs), using Spring Boot and .NETCORE.</p><p></p><p><b><u>Skills and Knowledge</u></b>:</p><p></p><p>Candidate must also possess:</p><p></p><ul><li>Demonstrated Expertise (\u201cDE\u201d) designing and developing financial services applications; performing IT product development in an AWS environment, using Java, Spring Boot framework, API development, Kafka, Swagger, Apache Tomcat, SQL, and Java Database Interface (JDBI); and deploying applications and databases through established Continuous Integration/Continuous Deployment (CI/CD) pipelines, using GitHub, ECS, Liquibase, Kubernetes, and Docker.\u00a0\u00a0</li><li>DE diagnosing and correcting issues for distributed financial services (evaluating customer impact and the appropriate steps required for resolution) using Service Now, Jira, Datadog, Splunk, and PostgreSQL, within production and staging environments.\u00a0</li><li>DE designing and developing unit, functional, integration, and smoke tests for distributed enterprise systems, using JUnit, Mockito, and MockServer; and testing all aspects of code (edge and negative test cases to ensure mission critical code is reliable), using Bruno and Datadog.\u00a0</li><li>DE designing and developing distributed enterprise systems, using SNS and SQS; and designing code to properly handle idempotency and ensure mission critical features are resilient, using Confluence and Jira.</li></ul><p>#PE1M2</p><p>#LI-DNI</p><p><span class=\"emphasis-2\">Fidelity\u2019s Onsite Working Model</span><span style=\"color:#172b4d\"><br />Fidelity is transitioning to a full-time onsite working model through a phased rollout across regions and roles. Currently, some roles and locations require 100% onsite presence, while others require less. Onsite expectations are likely to evolve as the rollout continues. This transition does not apply to fully remote roles.<br /></span></p><h2></h2><p style=\"text-align:inherit\"></p><h2>Certifications:</h2><h2></h2><p style=\"text-align:inherit\"></p><h2>Category:</h2><h2></h2>Information Technology<p style=\"text-align:left\"><span>Please be advised that Fidelity\u2019s business is governed by the provisions of the Securities Exchange Act of 1934, the Investment Advisers Act of 1940, the Investment Company Act of 1940, ERISA, numerous state laws governing securities, investment and retirement-related financial activities and the rules and regulations of numerous self-regulatory organizations, including FINRA, among others. Those laws and regulations may restrict Fidelity from hiring and/or associating with individuals with certain Criminal Histories.</span></p>",
+  "location": "Westlake, TX",
+  "postedOn": "Posted Today",
+  "startDate": "2026-09-23",
+  "timeType": "Full time",
+  "jobReqId": "2135674",
+  "jobPostingId": "Senior-Software-Engineer-Developer_2135674",
+  "jobPostingSiteId": "FidelityCareers",
+  "country": {
+   "descriptor": "United States of America",
+   "id": "bc33aa3152ec42d4995f4791a106ed09"
+  },
+  "canApply": true,
+  "posted": true,
+  "includeResumeParsing": true,
+  "jobRequisitionLocation": {
+   "descriptor": "One Destiny Way, Westlake TX",
+   "country": {
+    "descriptor": "United States of America",
+    "id": "bc33aa3152ec42d4995f4791a106ed09",
+    "alpha2Code": "US"
+   }
+  },
+  "externalUrl": "https://wd1.myworkdaysite.com/recruiting/fmr/FidelityCareers/job/Westlake-TX/Senior-Software-Engineer-Developer_2135674",
+  "questionnaireId": "b21d6fa78e5e10011b83fea5a66b0000",
+  "supplementaryQuestionnaireId": "e325dfce575a1001a1da33c0f0690000",
+  "timeLeftToApply": "30+ days left to apply",
+  "endDate": "2026-11-03",
+  "jobPostingEndDateAsText": "End Date: November 3, 2026"
+ },
+ "hiringOrganization": {
+  "name": "Fidelity Technology Group, LLC",
+  "url": ""
+ },
+ "similarJobs": [
+  {
+   "title": "Senior Software Engineer/Developer",
+   "externalPath": "/job/Westlake-TX/Senior-Software-Engineer-Developer_2132371",
+   "timeType": "Full time",
+   "locationsText": "Westlake, TX",
+   "postedOn": "Posted 20 Days Ago",
+   "startDate": "2026-09-03",
+   "timeLeftToApply": "14 days left to apply",
+   "jobPostingEndDateAsText": "End Date: October 8, 2026"
+  },
+  {
+   "title": "Senior Software Engineer/Developer",
+   "externalPath": "/job/Westlake-TX/Senior-Software-Engineer-Developer_2134236",
+   "timeType": "Full time",
+   "locationsText": "Westlake, TX",
+   "postedOn": "Posted 28 Days Ago",
+   "startDate": "2026-08-26",
+   "timeLeftToApply": "12 days left to apply",
+   "jobPostingEndDateAsText": "End Date: October 6, 2026"
+  },
+  {
+   "title": "Senior Software Engineer/Developer",
+   "externalPath": "/job/Westlake-TX/Senior-Software-Engineer-Developer_2134873",
+   "timeType": "Full time",
+   "locationsText": "Westlake, TX",
+   "postedOn": "Posted 14 Days Ago",
+   "startDate": "2026-09-09",
+   "timeLeftToApply": "26 days left to apply",
+   "jobPostingEndDateAsText": "End Date: October 20, 2026"
+  }
+ ],
+ "userAuthenticated": false
+}

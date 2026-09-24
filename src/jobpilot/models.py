@@ -29,7 +29,8 @@ JOB_STATUSES = (
 
 VISA_FLAGS = ("ok", "unclear", "blocked")
 
-ATS_SOURCES = ("greenhouse", "lever", "ashby", "workable", "smartrecruiters", "recruitee", "hn")
+ATS_SOURCES = ("greenhouse", "lever", "ashby", "workable", "smartrecruiters", "recruitee",
+               "workday", "amazon", "eightfold", "oracle", "hn")
 
 
 def utcnow() -> datetime:

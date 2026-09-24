@@ -5,6 +5,7 @@
 
 TOP     ?= 30
 JOB     ?=
+PORT    ?= 8501
 UV      := uv run
 PY      := $(UV) python
 
@@ -14,7 +15,8 @@ BROWSER := .venv/.jobpilot-chromium
 
 .DEFAULT_GOAL := all
 .PHONY: all help setup install browsers models ollama-up init doctor ready test test-fast ci \
-        fetch filter score tailor prefill outreach daily ui lca clean-cache clean
+        fetch filter score tailor prefill outreach daily ui ui-start ui-stop ui-restart lca \
+        clean-cache clean
 
 # --- the one command ------------------------------------------------------------
 
@@ -26,7 +28,7 @@ all: setup ## Set up, then open the UI; run and watch every stage from its Pipel
 
 help: ## List targets
 	@grep -E '^[a-z-]+:.*## ' $(MAKEFILE_LIST) | awk -F':.*## ' '{printf "  %-12s %s\n", $$1, $$2}'
-	@printf '\n  Variables: TOP=%s  JOB=<id> (tailor/prefill one job)  FILE=<csv> (lca)\n' "$(TOP)"
+	@printf '\n  Variables: TOP=%s  JOB=<id> (tailor/prefill one job)  FILE=<csv> (lca)  PORT=%s (ui)\n' "$(TOP)" "$(PORT)"
 
 # --- setup (idempotent; safe to rerun) ------------------------------------------
 
@@ -116,8 +118,34 @@ outreach: $(SYNCED) ## Draft messages for HN / manual-apply jobs
 daily: $(BROWSER) ready ## fetch -> filter -> score -> tailor -> prefill (never submits)
 	$(UV) jobpilot run-daily --top $(TOP)
 
-ui: $(SYNCED) ## Review app; the only place to Approve & Submit
-	$(UV) jobpilot ui
+ui: $(SYNCED) ## Review app in the foreground; the only place to Approve & Submit
+	$(UV) jobpilot ui --port $(PORT)
+
+# Background UI: survives closing the terminal, logs to logs/ui.log. Headless so Streamlit
+# neither opens a browser tab nor waits on its first-run email prompt with no terminal.
+ui-start: $(SYNCED) ## Run the UI in the background (PORT=8501), log in logs/ui.log
+	@if lsof -tiTCP:$(PORT) -sTCP:LISTEN >/dev/null 2>&1; then \
+	  echo "UI already running: http://localhost:$(PORT)  (make ui-restart to reload code)"; exit 0; fi; \
+	mkdir -p logs; \
+	STREAMLIT_SERVER_HEADLESS=true nohup $(UV) jobpilot ui --port $(PORT) >logs/ui.log 2>&1 & \
+	for i in $$(seq 1 30); do \
+	  lsof -tiTCP:$(PORT) -sTCP:LISTEN >/dev/null 2>&1 && { echo "UI running: http://localhost:$(PORT)"; exit 0; }; \
+	  sleep 1; done; \
+	echo "UI did not come up after 30s; see logs/ui.log"; tail -5 logs/ui.log; exit 1
+
+ui-stop: ## Stop the UI listening on PORT (only if it is Streamlit)
+	@pids=$$(lsof -tiTCP:$(PORT) -sTCP:LISTEN 2>/dev/null); \
+	if [ -z "$$pids" ]; then echo "no UI on port $(PORT)"; exit 0; fi; \
+	for p in $$pids; do \
+	  if ps -o command= -p $$p | grep -q streamlit; then kill $$p && echo "stopped UI (pid $$p)"; \
+	  else echo "port $(PORT) is used by something else (pid $$p); not touching it"; exit 1; fi; \
+	done; \
+	for i in $$(seq 1 20); do lsof -tiTCP:$(PORT) -sTCP:LISTEN >/dev/null 2>&1 || exit 0; sleep 0.5; done; \
+	echo "UI still listening on $(PORT) after 10s"; exit 1
+
+ui-restart: ## Stop and start the background UI (picks up code changes)
+	@$(MAKE) --no-print-directory ui-stop
+	@$(MAKE) --no-print-directory ui-start
 
 lca: $(SYNCED) ## Import a DOL LCA CSV: make lca FILE=path/to/file.csv
 	@test -n "$(FILE)" || { echo "usage: make lca FILE=path/to/LCA.csv"; exit 1; }

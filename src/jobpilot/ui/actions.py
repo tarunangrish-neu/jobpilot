@@ -224,18 +224,19 @@ def stats() -> dict[str, Any]:
 
 # --- pipeline overview (UI-first landing page) ---------------------------------
 
+# (count key, short label, longer explanation shown on hover)
 FUNNEL = (
-    ("fetched", "All jobs fetched"),
-    ("awaiting_filter", "Waiting for filter"),
-    ("filtered_out", "Dropped by filters"),
-    ("awaiting_score", "Passed filters, not ranked yet"),
-    ("scored", "Ranked"),
-    ("tailored", "Resume tailored"),
-    ("dry_run", "Form dry-run done"),
-    ("prefilled", "Prefilled, ready to review"),
-    ("needs_human", "Needs you"),
-    ("approved", "Approved"),
-    ("submitted", "Submitted"),
+    ("fetched", "Fetched", "Every job pulled from your boards."),
+    ("awaiting_filter", "Waiting for filter", "Fetched but not yet screened by the filter stage."),
+    ("filtered_out", "Filtered out", "Dropped by title, location, age, dedupe, or the visa screen."),
+    ("awaiting_score", "Not ranked yet", "Passed the filters; waiting for the rank stage."),
+    ("scored", "Ranked", "Ranked against your resume; no tailored resume yet."),
+    ("tailored", "Tailored", "A tailored resume was built for this job."),
+    ("dry_run", "Dry-run done", "The live form was read and every answer planned (nothing typed)."),
+    ("prefilled", "Ready to review", "Form filled in the browser, stopped before submit."),
+    ("needs_human", "Needs you", "Blocked on something only you can answer or do."),
+    ("approved", "Approved", "You approved it in the review queue."),
+    ("submitted", "Submitted", "Sent, by JobPilot or by you manually."),
 )
 
 

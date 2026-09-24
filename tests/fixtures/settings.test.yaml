@@ -100,7 +100,14 @@ hn:
   keywords: [backend, infrastructure, platform, rust, payments, distributed, founding engineer, ml infra, ai infra]
 
 tailor:
-  max_bullets: 12              # upper bound; bullets are trimmed further until the PDF is one page
+  # Tailored resumes keep every master bullet (reordered, some rephrased) and only drop
+  # the lowest-ranked ones if they run longer than the full master resume renders.
+  max_bullets: 0               # 0 = no cap; set e.g. 12 for a shorter resume
+  # max_pages: 1               # force a page count instead of matching the master
+  # Bullets the model may rewrite per job (XYZ style, checked by tailor/verify.py). With
+  # qwen2.5:7b almost every rewrite of a long bullet gets rejected for dropping details;
+  # 0 skips rewriting (tailor call ~17s -> ~9s); a stronger model gets more out of it.
+  max_rephrasings: 4
   # auto: write a cover letter only when the application form has a cover-letter field
   # (generated during prefill). always / never override that.
   cover_letter: auto

@@ -92,8 +92,12 @@ class PoliteClient:
                     await asyncio.sleep(wait)
             self._last_request[host] = time.monotonic()
 
-    async def get_text(self, url: str) -> tuple[int, str]:
-        """GET a URL, returning (status_code, body). Cached and rate-limited."""
+    async def get_text(self, url: str, headers: Optional[dict[str, str]] = None) -> tuple[int, str]:
+        """GET a URL, returning (status_code, body). Cached and rate-limited.
+
+        `headers` are extra request headers (e.g. an API key); they are not part
+        of the cache key, so never vary the response by header alone.
+        """
         cached = self._read_cache(url)
         if cached is not None:
             return cached["status"], cached["body"]
@@ -104,7 +108,7 @@ class PoliteClient:
         host = httpx.URL(url).host or url
         async with self._sem:
             await self._throttle(host)
-            resp = await self._client.get(url)
+            resp = await self._client.get(url, headers=headers)
 
         body = resp.text
         # Only cache successes; a transient 5xx should not be sticky.
@@ -132,9 +136,9 @@ class PoliteClient:
         except json.JSONDecodeError:
             return resp.status_code, None
 
-    async def get_json(self, url: str) -> tuple[int, Any]:
+    async def get_json(self, url: str, headers: Optional[dict[str, str]] = None) -> tuple[int, Any]:
         """GET a URL and parse JSON. Returns (status, parsed-or-None)."""
-        status, body = await self.get_text(url)
+        status, body = await self.get_text(url, headers=headers)
         if status != 200:
             return status, None
         try:

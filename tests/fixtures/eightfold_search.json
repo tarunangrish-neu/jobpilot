@@ -1,0 +1,1064 @@
+{
+ "status": 200,
+ "error": {
+  "message": "",
+  "body": ""
+ },
+ "data": {
+  "positions": [
+   {
+    "id": 1970393556929279,
+    "displayJobId": "200043324",
+    "name": "Sr Software Engineer/Principal Software Engineer",
+    "locations": [
+     "United States, Multiple Locations, Multiple Locations",
+     "United States, Washington, Redmond"
+    ],
+    "standardizedLocations": [
+     "US",
+     "Redmond, WA, US"
+    ],
+    "postedTs": 1783968385,
+    "solrScore": null,
+    "stars": 0,
+    "department": "Software Engineering",
+    "creationTs": 1783699627,
+    "isHot": 0,
+    "workLocationOption": "onsite",
+    "locationFlexibility": null,
+    "atsJobId": "200043324",
+    "positionUrl": "/careers/job/1970393556929279"
+   },
+   {
+    "id": 1970393556942068,
+    "displayJobId": "200044839",
+    "name": "Software Engineer II and/or Senior Software Engineer - AI Compilers",
+    "locations": [
+     "United States, Multiple Locations, Multiple Locations",
+     "United States, Washington, Redmond",
+     "United States, California, Mountain View"
+    ],
+    "standardizedLocations": [
+     "US",
+     "Redmond, WA, US",
+     "Mountain View, CA, US"
+    ],
+    "postedTs": 1790009362,
+    "solrScore": null,
+    "stars": 0,
+    "department": "Software Engineering",
+    "creationTs": 1784667822,
+    "isHot": 0,
+    "workLocationOption": "onsite",
+    "locationFlexibility": null,
+    "atsJobId": "200044839",
+    "positionUrl": "/careers/job/1970393556942068"
+   },
+   {
+    "id": 1970393556952551,
+    "displayJobId": "200046273",
+    "name": "Software Engineer II and/or Senior Software Engineer - Backend",
+    "locations": [
+     "United States, Washington, Redmond"
+    ],
+    "standardizedLocations": [
+     "Redmond, WA, US"
+    ],
+    "postedTs": 1788968457,
+    "solrScore": null,
+    "stars": 0,
+    "department": "Software Engineering",
+    "creationTs": 1785434449,
+    "isHot": 0,
+    "workLocationOption": "onsite",
+    "locationFlexibility": null,
+    "atsJobId": "200046273",
+    "positionUrl": "/careers/job/1970393556952551"
+   }
+  ],
+  "filterDef": {
+   "facets": {
+    "locations": [
+     [
+      "Remote",
+      999999
+     ],
+     [
+      "Redmond, WA, United States",
+      797
+     ],
+     [
+      "United States",
+      258
+     ],
+     [
+      "Mountain View, CA, United States",
+      233
+     ],
+     [
+      "Bengaluru, KA, India",
+      133
+     ],
+     [
+      "Hyderabad, TS, India",
+      119
+     ],
+     [
+      "Atlanta, GA, United States",
+      99
+     ],
+     [
+      "New York, NY, United States",
+      89
+     ],
+     [
+      "Tokyo, Japan",
+      87
+     ],
+     [
+      "Austin, TX, United States",
+      77
+     ],
+     [
+      "Reston, VA, United States",
+      71
+     ]
+    ]
+   },
+   "smartFilters": [
+    {
+     "type": "toggle",
+     "filterName": "include_remote",
+     "title": "Include eligible remote jobs",
+     "options": null,
+     "tooltip": "When selected, the results will include remote job opportunities",
+     "extraData": {},
+     "displayCount": 10,
+     "translateOptions": false,
+     "allowFreeText": false
+    },
+    {
+     "type": "multi_select",
+     "filterName": "work_site",
+     "title": "Work site",
+     "options": [
+      {
+       "label": "3 DAYS / WEEK IN-OFFICE",
+       "value": "3 days / week in-office"
+      },
+      {
+       "label": "FULLY ON-SITE",
+       "value": "fully on-site"
+      },
+      {
+       "label": "0 DAYS / WEEK IN-OFFICE \u2013 REMOTE",
+       "value": "0 days / week in-office \u2013 remote"
+      },
+      {
+       "label": "4 DAYS / WEEK IN-OFFICE",
+       "value": "4 days / week in-office"
+      },
+      {
+       "label": "2 DAYS / WEEK IN-OFFICE",
+       "value": "2 days / week in-office"
+      },
+      {
+       "label": "1 DAY / WEEK IN-OFFICE",
+       "value": "1 day / week in-office"
+      }
+     ],
+     "tooltip": null,
+     "extraData": {},
+     "displayCount": 50,
+     "translateOptions": true,
+     "allowFreeText": false
+    },
+    {
+     "type": "multi_select",
+     "filterName": "seniority",
+     "title": "Experience level",
+     "options": [
+      {
+       "label": "SENIOR",
+       "value": "Senior"
+      },
+      {
+       "label": "MID-LEVEL",
+       "value": "Mid-Level"
+      },
+      {
+       "label": "MANAGER",
+       "value": "Manager"
+      },
+      {
+       "label": "DIRECTOR",
+       "value": "Director"
+      },
+      {
+       "label": "ENTRY",
+       "value": "Entry"
+      },
+      {
+       "label": "INTERN",
+       "value": "Intern"
+      },
+      {
+       "label": "VICE PRESIDENT",
+       "value": "Vice President"
+      },
+      {
+       "label": "CXO",
+       "value": "CXO"
+      }
+     ],
+     "tooltip": null,
+     "extraData": {},
+     "displayCount": 50,
+     "translateOptions": true,
+     "allowFreeText": false
+    },
+    {
+     "type": "multi_select",
+     "filterName": "profession",
+     "title": "Profession",
+     "options": [
+      {
+       "label": "SOFTWARE ENGINEERING",
+       "value": "software engineering"
+      },
+      {
+       "label": "SALES",
+       "value": "sales"
+      },
+      {
+       "label": "DATA CENTER",
+       "value": "data center"
+      },
+      {
+       "label": "HARDWARE ENGINEERING",
+       "value": "hardware engineering"
+      },
+      {
+       "label": "CUSTOMER SUCCESS",
+       "value": "customer success"
+      },
+      {
+       "label": "TECHNOLOGY SALES",
+       "value": "technology sales"
+      },
+      {
+       "label": "RESEARCH, APPLIED, & DATA SCIENCES",
+       "value": "research, applied, & data sciences"
+      },
+      {
+       "label": "CONSULTING SERVICES",
+       "value": "consulting services"
+      },
+      {
+       "label": "PROGRAM MANAGEMENT",
+       "value": "program management"
+      },
+      {
+       "label": "REAL ESTATE, FACILITIES, & CONSTRUCTION",
+       "value": "real estate, facilities, & construction"
+      },
+      {
+       "label": "DIGITAL SALES AND SOLUTIONS",
+       "value": "digital sales and solutions"
+      },
+      {
+       "label": "PRODUCT MANAGEMENT",
+       "value": "product management"
+      },
+      {
+       "label": "BUSINESS OPERATIONS",
+       "value": "business operations"
+      },
+      {
+       "label": "TECHNICAL SUPPORT",
+       "value": "technical support"
+      },
+      {
+       "label": "MARKETING",
+       "value": "marketing"
+      },
+      {
+       "label": "SECURITY ENGINEERING",
+       "value": "security engineering"
+      },
+      {
+       "label": "SUPPLY CHAIN",
+       "value": "supply chain"
+      },
+      {
+       "label": "FINANCE",
+       "value": "finance"
+      },
+      {
+       "label": "QUANTUM COMPUTING",
+       "value": "quantum computing"
+      },
+      {
+       "label": "SALES ENABLEMENT",
+       "value": "sales enablement"
+      },
+      {
+       "label": "DESIGN & CREATIVE",
+       "value": "design & creative"
+      },
+      {
+       "label": "GOVERNANCE, RISK, & COMPLIANCE",
+       "value": "governance, risk, & compliance"
+      },
+      {
+       "label": "HUMAN RESOURCES",
+       "value": "human resources"
+      },
+      {
+       "label": "BUSINESS DEVELOPMENT & VENTURES",
+       "value": "business development & ventures"
+      },
+      {
+       "label": "ADMINISTRATION",
+       "value": "administration"
+      },
+      {
+       "label": "ANALYTICS",
+       "value": "analytics"
+      },
+      {
+       "label": "CORPORATE AFFAIRS",
+       "value": "corporate affairs"
+      },
+      {
+       "label": "COMMUNICATIONS",
+       "value": "communications"
+      },
+      {
+       "label": "LEGAL",
+       "value": "legal"
+      },
+      {
+       "label": "LEARNING",
+       "value": "learning"
+      },
+      {
+       "label": "MANUFACTURING",
+       "value": "manufacturing"
+      }
+     ],
+     "tooltip": null,
+     "extraData": {},
+     "displayCount": 50,
+     "translateOptions": true,
+     "allowFreeText": false
+    },
+    {
+     "type": "multi_select",
+     "filterName": "career_discipline",
+     "title": "Discipline",
+     "options": [
+      {
+       "label": "SOFTWARE ENGINEERING",
+       "value": "Software Engineering"
+      },
+      {
+       "label": "SOLUTION AREA SPECIALISTS",
+       "value": "Solution Area Specialists"
+      },
+      {
+       "label": "PRODUCT MANAGEMENT",
+       "value": "Product Management"
+      },
+      {
+       "label": "SOLUTION ENGINEERING",
+       "value": "Solution Engineering"
+      },
+      {
+       "label": "CLOUD SOLUTION ARCHITECTURE",
+       "value": "Cloud Solution Architecture"
+      },
+      {
+       "label": "CONSTRUCTION PROJECT MANAGEMENT",
+       "value": "Construction Project Management"
+      },
+      {
+       "label": "TECHNICAL PROGRAM MANAGEMENT",
+       "value": "Technical Program Management"
+      },
+      {
+       "label": "DATA CENTER TECHNICIANS",
+       "value": "Data Center Technicians"
+      },
+      {
+       "label": "DIGITAL SOLUTION AREA SPECIALISTS",
+       "value": "Digital Solution Area Specialists"
+      },
+      {
+       "label": "SILICON ENGINEERING",
+       "value": "Silicon Engineering"
+      },
+      {
+       "label": "DATA CENTER OPERATIONS MANAGEMENT",
+       "value": "Data Center Operations Management"
+      },
+      {
+       "label": "CRITICAL ENVIRONMENT OPS",
+       "value": "Critical Environment Ops"
+      },
+      {
+       "label": "BUSINESS PROGRAM MANAGEMENT",
+       "value": "Business Program Management"
+      },
+      {
+       "label": "CUSTOMER SUCCESS ACCOUNT MGMT",
+       "value": "Customer Success Account Mgmt"
+      },
+      {
+       "label": "APPLIED SCIENCES",
+       "value": "Applied Sciences"
+      },
+      {
+       "label": "LOGISTICS TECHNICIAN",
+       "value": "Logistics Technician"
+      },
+      {
+       "label": "TECHNICAL SUPPORT ENGINEERING",
+       "value": "Technical Support Engineering"
+      },
+      {
+       "label": "ACCOUNT MANAGEMENT",
+       "value": "Account Management"
+      },
+      {
+       "label": "SOLUTION ARCHITECTURE",
+       "value": "Solution Architecture"
+      },
+      {
+       "label": "TECHNOLOGY CONSULTING",
+       "value": "Technology Consulting"
+      },
+      {
+       "label": "HARDWARE ENGINEERING",
+       "value": "Hardware Engineering"
+      },
+      {
+       "label": "ACCOUNT TECHNOLOGY",
+       "value": "Account Technology"
+      },
+      {
+       "label": "RESEARCH SCIENCES",
+       "value": "Research Sciences"
+      },
+      {
+       "label": "DATA SCIENCE",
+       "value": "Data Science"
+      },
+      {
+       "label": "FINANCIAL ANALYSIS",
+       "value": "Financial Analysis"
+      },
+      {
+       "label": "QUANTUM ENGINEERING",
+       "value": "Quantum Engineering"
+      },
+      {
+       "label": "SOURCING AND CATEGORY MANAGEMENT",
+       "value": "Sourcing and Category Management"
+      },
+      {
+       "label": "SECURITY RESEARCH",
+       "value": "Security Research"
+      },
+      {
+       "label": "STRATEGIC ACCOUNT MANAGEMENT",
+       "value": "Strategic Account Management"
+      },
+      {
+       "label": "SALES STRATEGY ENABLEMENT",
+       "value": "Sales Strategy Enablement"
+      },
+      {
+       "label": "CONSULTING PROJECT MANAGEMENT",
+       "value": "Consulting Project Management"
+      },
+      {
+       "label": "PRODUCT MARKETING",
+       "value": "Product Marketing"
+      },
+      {
+       "label": "PRODUCT DESIGN",
+       "value": "Product Design"
+      },
+      {
+       "label": "REAL ESTATE PORTFOLIO MANAGEMENT",
+       "value": "Real Estate Portfolio Management"
+      },
+      {
+       "label": "FIRMWARE ENGINEERING",
+       "value": "Firmware Engineering"
+      },
+      {
+       "label": "INDUSTRY ADVISORY",
+       "value": "Industry Advisory"
+      },
+      {
+       "label": "STRATEGIC ACCOUNT TECHNOLOGY",
+       "value": "Strategic Account Technology"
+      },
+      {
+       "label": "DIGITAL SOLUTION ENGINEERING",
+       "value": "Digital Solution Engineering"
+      },
+      {
+       "label": "SERVICE ENGINEERING",
+       "value": "Service Engineering"
+      },
+      {
+       "label": "ELECTRICAL ENGINEERING",
+       "value": "Electrical Engineering"
+      },
+      {
+       "label": "RELIABILITY ENGINEERING",
+       "value": "Reliability Engineering"
+      },
+      {
+       "label": "ENVIRONMENTAL HEALTH & SAFETY",
+       "value": "Environmental Health & Safety"
+      },
+      {
+       "label": "MECHANICAL ENGINEERING",
+       "value": "Mechanical Engineering"
+      },
+      {
+       "label": "BUSINESS MANAGEMENT",
+       "value": "Business Management"
+      },
+      {
+       "label": "CUSTOMER EXPERIENCE ENGINEERING",
+       "value": "Customer Experience Engineering"
+      },
+      {
+       "label": "SERVICES ACCOUNT MANAGEMENT",
+       "value": "Services Account Management"
+      },
+      {
+       "label": "SITE RELIABILITY ENGINEERING",
+       "value": "Site Reliability Engineering"
+      },
+      {
+       "label": "BUSINESS SUPPORT",
+       "value": "Business Support"
+      },
+      {
+       "label": "PARTNER DEVELOPMENT MANAGEMENT",
+       "value": "Partner Development Management"
+      },
+      {
+       "label": "DIGITAL ACCOUNT MANAGEMENT",
+       "value": "Digital Account Management"
+      }
+     ],
+     "tooltip": null,
+     "extraData": {},
+     "displayCount": 50,
+     "translateOptions": true,
+     "allowFreeText": false
+    }
+   ],
+   "allFilters": [
+    {
+     "type": "multi_select",
+     "filterName": "roletype",
+     "title": "Role type",
+     "options": [
+      {
+       "label": "INDIVIDUAL CONTRIBUTOR",
+       "value": "individual contributor"
+      },
+      {
+       "label": "PEOPLE MANAGER",
+       "value": "people manager"
+      }
+     ],
+     "tooltip": null,
+     "extraData": {},
+     "displayCount": 50,
+     "translateOptions": true,
+     "allowFreeText": false
+    },
+    {
+     "type": "multi_select",
+     "filterName": "employment_type",
+     "title": "Employment type",
+     "options": [
+      {
+       "label": "FULL-TIME",
+       "value": "full-time"
+      },
+      {
+       "label": "INTERNSHIP",
+       "value": "internship"
+      },
+      {
+       "label": "POST DOC RESEARCH",
+       "value": "post doc research"
+      },
+      {
+       "label": "TEMP/CONTRACT",
+       "value": "temp/contract"
+      }
+     ],
+     "tooltip": null,
+     "extraData": {},
+     "displayCount": 50,
+     "translateOptions": true,
+     "allowFreeText": false
+    },
+    {
+     "type": "multi_select_suggest",
+     "filterName": "skills",
+     "title": "Skills",
+     "options": [
+      {
+       "label": "PROBLEM SOLVING",
+       "value": "Problem Solving"
+      },
+      {
+       "label": "DECISION MAKING",
+       "value": "Decision Making"
+      },
+      {
+       "label": "CONFLICT RESOLUTION",
+       "value": "Conflict Resolution"
+      },
+      {
+       "label": "ORAL COMMUNICATION",
+       "value": "Oral Communication"
+      },
+      {
+       "label": "NEGOTIATION",
+       "value": "Negotiation"
+      },
+      {
+       "label": "WRITTEN COMMUNICATION",
+       "value": "Written Communication"
+      },
+      {
+       "label": "ENGLISH LANGUAGE PROFICIENCY",
+       "value": "English Language Proficiency"
+      },
+      {
+       "label": "QUALITY ASSURANCE",
+       "value": "Quality Assurance"
+      },
+      {
+       "label": "PROJECT MANAGEMENT",
+       "value": "Project Management"
+      },
+      {
+       "label": "CREATIVITY",
+       "value": "Creativity"
+      },
+      {
+       "label": "DATA ANALYSIS",
+       "value": "Data Analysis"
+      },
+      {
+       "label": "ARTIFICIAL INTELLIGENCE (AI)",
+       "value": "Artificial Intelligence (AI)"
+      },
+      {
+       "label": "TECHNICAL COMMUNICATION",
+       "value": "Technical Communication"
+      },
+      {
+       "label": "BUSINESS RELATIONSHIP MANAGEMENT",
+       "value": "Business Relationship Management"
+      },
+      {
+       "label": "DETAIL ORIENTED",
+       "value": "Detail Oriented"
+      },
+      {
+       "label": "BUSINESS ACUMEN",
+       "value": "Business Acumen"
+      },
+      {
+       "label": "ARCHITECTURE DESIGN",
+       "value": "Architecture Design"
+      },
+      {
+       "label": "MICROSOFT PRODUCTS",
+       "value": "Microsoft Products"
+      },
+      {
+       "label": "AGILITY",
+       "value": "Agility"
+      },
+      {
+       "label": "EXECUTIVE RELATIONSHIPS",
+       "value": "Executive Relationships"
+      },
+      {
+       "label": "AI FLUENCY",
+       "value": "AI Fluency"
+      },
+      {
+       "label": "FINANCIAL ANALYSIS",
+       "value": "Financial Analysis"
+      },
+      {
+       "label": "TRUSTED ADVISOR",
+       "value": "Trusted Advisor"
+      },
+      {
+       "label": "STORYTELLING",
+       "value": "Storytelling"
+      },
+      {
+       "label": "INFLUENCE OTHERS",
+       "value": "Influence Others"
+      },
+      {
+       "label": "STAKEHOLDER MANAGEMENT",
+       "value": "Stakeholder Management"
+      },
+      {
+       "label": "ANALYTICAL SKILLS",
+       "value": "Analytical Skills"
+      },
+      {
+       "label": "TECHNOLOGY INDUSTRY KNOWLEDGE",
+       "value": "Technology Industry Knowledge"
+      },
+      {
+       "label": "PRESENTATIONS",
+       "value": "Presentations"
+      },
+      {
+       "label": "ALGORITHM DESIGN AND IMPLEMENTATION",
+       "value": "Algorithm Design and Implementation"
+      },
+      {
+       "label": "SOFTWARE DEVELOPMENT",
+       "value": "Software Development"
+      },
+      {
+       "label": "SYSTEMS THINKING",
+       "value": "Systems Thinking"
+      },
+      {
+       "label": "PRODUCT LIFECYCLE",
+       "value": "Product Lifecycle"
+      },
+      {
+       "label": "CONSULTATIVE SELLING",
+       "value": "Consultative Selling"
+      },
+      {
+       "label": "CHANGE MANAGEMENT",
+       "value": "Change Management"
+      },
+      {
+       "label": "WRITES CODE",
+       "value": "Writes Code"
+      },
+      {
+       "label": "OPERATIONAL EXCELLENCE",
+       "value": "Operational Excellence"
+      },
+      {
+       "label": "SECURITY PRINCIPLES",
+       "value": "Security Principles"
+      },
+      {
+       "label": "COLLABORATIVE INNOVATION",
+       "value": "Collaborative Innovation"
+      },
+      {
+       "label": "ENGINEERING LIFECYCLE",
+       "value": "Engineering Lifecycle"
+      },
+      {
+       "label": "AUTOMATION",
+       "value": "Automation"
+      },
+      {
+       "label": "DISTRIBUTED SYSTEMS APPLICATION DEVELOPMENT",
+       "value": "Distributed Systems Application Development"
+      },
+      {
+       "label": "TECHNICAL SALES",
+       "value": "Technical Sales"
+      },
+      {
+       "label": "BUSINESS ANALYSIS",
+       "value": "Business Analysis"
+      },
+      {
+       "label": "COMPUTER SCIENCE",
+       "value": "Computer Science"
+      },
+      {
+       "label": "REGULATORY COMPLIANCE",
+       "value": "Regulatory Compliance"
+      },
+      {
+       "label": "TROUBLESHOOTING",
+       "value": "Troubleshooting"
+      },
+      {
+       "label": "TESTING PROCESS",
+       "value": "Testing Process"
+      },
+      {
+       "label": "RESILIENT SYSTEM DESIGN",
+       "value": "Resilient System Design"
+      },
+      {
+       "label": "BUSINESS KNOWLEDGE",
+       "value": "Business Knowledge"
+      }
+     ],
+     "tooltip": null,
+     "extraData": {},
+     "displayCount": 50,
+     "translateOptions": true,
+     "allowFreeText": false
+    },
+    {
+     "type": "multi_select",
+     "filterName": "hiring_title",
+     "title": "Job title",
+     "options": [
+      {
+       "label": "SENIOR SOFTWARE ENGINEER",
+       "value": "senior software engineer"
+      },
+      {
+       "label": "PRINCIPAL SOFTWARE ENGINEER",
+       "value": "principal software engineer"
+      },
+      {
+       "label": "DATA CENTER TECHNICIAN",
+       "value": "data center technician"
+      },
+      {
+       "label": "SOFTWARE ENGINEER II",
+       "value": "software engineer ii"
+      },
+      {
+       "label": "LOGISTICS TECHNICIAN",
+       "value": "logistics technician"
+      },
+      {
+       "label": "PRINCIPAL PRODUCT MANAGER",
+       "value": "principal product manager"
+      },
+      {
+       "label": "CUSTOMER SUCCESS ACCOUNT MANAGER",
+       "value": "customer success account manager"
+      },
+      {
+       "label": "SENIOR PRODUCT MANAGER",
+       "value": "senior product manager"
+      },
+      {
+       "label": "CRITICAL ENVIRONMENT TECHNICIAN",
+       "value": "critical environment technician"
+      },
+      {
+       "label": "SOFTWARE ENGINEER",
+       "value": "software engineer"
+      },
+      {
+       "label": "PRINCIPAL SOFTWARE ENGINEERING MANAGER",
+       "value": "principal software engineering manager"
+      },
+      {
+       "label": "SOFTWARE ENGINEER II - CTJ - POLY",
+       "value": "software engineer ii - ctj - poly"
+      },
+      {
+       "label": "PRINCIPAL APPLIED SCIENTIST",
+       "value": "principal applied scientist"
+      },
+      {
+       "label": "ACCOUNT TECHNOLOGY STRATEGIST",
+       "value": "account technology strategist"
+      },
+      {
+       "label": "SENIOR APPLIED SCIENTIST",
+       "value": "senior applied scientist"
+      },
+      {
+       "label": "CRITICAL ENVIRONMENT PROGRAM MANAGER",
+       "value": "critical environment program manager"
+      },
+      {
+       "label": "SENIOR TECHNICAL PROGRAM MANAGER",
+       "value": "senior technical program manager"
+      },
+      {
+       "label": "CONSTRUCTION PROJECT MANAGER",
+       "value": "construction project manager"
+      },
+      {
+       "label": "SENIOR FINANCE MANAGER",
+       "value": "senior finance manager"
+      },
+      {
+       "label": "CRITICAL ENVIRONMENT OPERATIONS MANAGER",
+       "value": "critical environment operations manager"
+      },
+      {
+       "label": "DATA CENTER TECHNICIAN MANAGER",
+       "value": "data center technician manager"
+      },
+      {
+       "label": "PRINCIPAL DATA SCIENTIST",
+       "value": "principal data scientist"
+      },
+      {
+       "label": "PRINCIPAL SECURITY ENGINEER",
+       "value": "principal security engineer"
+      },
+      {
+       "label": "SENIOR CRITICAL ENVIRONMENT TECHNICIAN",
+       "value": "senior critical environment technician"
+      },
+      {
+       "label": "SENIOR DATA CENTER TECHNICIAN",
+       "value": "senior data center technician"
+      },
+      {
+       "label": "SENIOR FIRMWARE ENGINEER",
+       "value": "senior firmware engineer"
+      },
+      {
+       "label": "SENIOR LOGISTICS TECHNICIAN",
+       "value": "senior logistics technician"
+      },
+      {
+       "label": "STRATEGIC ACCOUNT TECHNOLOGY STRATEGIST",
+       "value": "strategic account technology strategist"
+      },
+      {
+       "label": "CE FIELD SERVICE ENGINEER",
+       "value": "ce field service engineer"
+      },
+      {
+       "label": "CLOUD SOLUTION ARCHITECT",
+       "value": "cloud solution architect"
+      },
+      {
+       "label": "CONSTRUCTION PROJECT ENGINEER",
+       "value": "construction project engineer"
+      },
+      {
+       "label": "CONSTRUCTION QUALITY MANAGER",
+       "value": "construction quality manager"
+      },
+      {
+       "label": "CRITICAL ENVIRONMENT ELECTRICAL ENGINEER",
+       "value": "critical environment electrical engineer"
+      },
+      {
+       "label": "CUSTOMER OPERATIONS MANAGER",
+       "value": "customer operations manager"
+      },
+      {
+       "label": "DIGITAL ACCOUNT EXECUTIVE",
+       "value": "digital account executive"
+      },
+      {
+       "label": "MECHANICAL ENGINEER",
+       "value": "mechanical engineer"
+      },
+      {
+       "label": "SOLUTION ENGINEERING",
+       "value": "solution engineering"
+      },
+      {
+       "label": "ACCOUNT EXECUTIVE",
+       "value": "account executive"
+      },
+      {
+       "label": "COMMISSIONING MANAGER",
+       "value": "commissioning manager"
+      },
+      {
+       "label": "CRITICAL ENVIRONMENT TECHNICIAN MANAGER",
+       "value": "critical environment technician manager"
+      },
+      {
+       "label": "CUSTOMER SUCCESS ACCOUNT MANAGER (CSAM)",
+       "value": "customer success account manager (csam)"
+      },
+      {
+       "label": "DATA CENTER PROGRAM MANAGER",
+       "value": "data center program manager"
+      },
+      {
+       "label": "DATA CENTER PROJECT MANAGER",
+       "value": "data center project manager"
+      },
+      {
+       "label": "METRO COST LEAD",
+       "value": "metro cost lead"
+      },
+      {
+       "label": "PRINCIPAL FIRMWARE ENGINEER",
+       "value": "principal firmware engineer"
+      },
+      {
+       "label": "PRINCIPAL TECHNICAL PROGRAM MANAGER",
+       "value": "principal technical program manager"
+      },
+      {
+       "label": "RESEARCHER",
+       "value": "researcher"
+      },
+      {
+       "label": "SENIOR CONSTRUCTION PROJECT MANAGER",
+       "value": "senior construction project manager"
+      },
+      {
+       "label": "SENIOR DESIGN VERIFICATION ENGINEER",
+       "value": "senior design verification engineer"
+      },
+      {
+       "label": "SENIOR PHYSICAL DESIGN ENGINEER",
+       "value": "senior physical design engineer"
+      }
+     ],
+     "tooltip": null,
+     "extraData": {},
+     "displayCount": 50,
+     "translateOptions": true,
+     "allowFreeText": false
+    }
+   ]
+  },
+  "count": 498,
+  "sortBy": "relevance",
+  "appliedFilters": {
+   "includeRemote": [
+    "1"
+   ],
+   "includeRelocation": [
+    "0"
+   ]
+  },
+  "debug": {},
+  "savedSearchMetadata": {
+   "savedSearchParamsHash": null,
+   "isSavedSearchActive": false
+  },
+  "resultsMetaData": {
+   "usedFuzzSearch": false
+  }
+ },
+ "metadata": null
+}

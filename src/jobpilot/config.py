@@ -51,3 +51,24 @@ def companies() -> list[dict[str, Any]]:
 
 def db_path() -> Path:
     return project_root() / "data" / "jobpilot.db"
+
+
+def load_env(path: Path | None = None) -> None:
+    """Read KEY=VALUE lines from .env into os.environ (without overriding what is set).
+
+    API keys (search providers, a hosted LLM) live in the gitignored .env; this
+    avoids a python-dotenv dependency for a dozen lines of parsing.
+    """
+    path = path or project_root() / ".env"
+    try:
+        lines = path.read_text(encoding="utf-8").splitlines()
+    except OSError:
+        return
+    for line in lines:
+        line = line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        key, _, value = line.partition("=")
+        key, value = key.strip().removeprefix("export ").strip(), value.strip().strip("\"'")
+        if key and value and key not in os.environ:
+            os.environ[key] = value

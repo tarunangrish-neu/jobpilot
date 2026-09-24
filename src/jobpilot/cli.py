@@ -23,6 +23,7 @@ app = typer.Typer(
 )
 
 logging.basicConfig(level=logging.WARNING, format="%(levelname)s %(name)s: %(message)s")
+config.load_env()
 
 
 def _table(rows: list[list[str]], headers: list[str]) -> str:
@@ -116,11 +117,55 @@ def _fetch_hn() -> list[str]:
     return ["HN Who is hiring", "hn", str(len(postings)), str(inserted), str(updated), detail]
 
 
+def _run_discovery(dry_run: bool = False) -> None:
+    """Run the settings.yaml `discovery.queries`; append verified new boards to companies.yaml."""
+    from .sources import search
+
+    cfg = config.settings().get("discovery", {})
+    if not cfg.get("queries"):
+        typer.echo("no discovery.queries in config/settings.yaml")
+        return
+
+    async def run():
+        async with PoliteClient() as client:
+            return await search.discover(client, cfg, config.companies())
+
+    report = asyncio.run(run())
+    for err in report.errors:
+        typer.echo(f"search error: {err}")
+    typer.echo(
+        f"{report.queries} queries, {report.urls} result URLs, {report.candidates} new board candidates, "
+        f"{report.already_known} already in companies.yaml"
+    )
+    rows = [[f.name, f.ats, f.token, str(f.open_roles), f.query[:50]] for f in report.added]
+    if rows:
+        typer.echo(_table(rows, ["company", "ats", "token", "open roles", "found by"]))
+    if report.added and not dry_run:
+        search.append_to_companies(config.project_root() / "config" / "companies.yaml", report.added)
+        typer.echo(f"\nadded {len(report.added)} boards to config/companies.yaml")
+    elif report.added:
+        typer.echo("\n--dry-run: companies.yaml not changed")
+
+
+@app.command("discover-search")
+def discover_search(
+    dry_run: bool = typer.Option(False, "--dry-run", help="Show what would be added without editing companies.yaml."),
+) -> None:
+    """Find new company boards with the web-search queries in settings.yaml (discovery:)."""
+    _run_discovery(dry_run)
+
+
 @app.command()
 def fetch(
     hn: bool = typer.Option(None, "--hn/--no-hn", help="Include HN Who's Hiring (default: hn.enabled)."),
+    discover: bool = typer.Option(
+        None, "--discover/--no-discover", help="Run discovery.queries first (default: discovery.enabled)."
+    ),
 ) -> None:
     """Pull postings from every active board in config/companies.yaml (and HN if enabled)."""
+    run_search = config.settings().get("discovery", {}).get("enabled", False) if discover is None else discover
+    if run_search:
+        _run_discovery()
     entries = config.companies()
     if not entries:
         typer.echo("no active companies in config/companies.yaml")
@@ -278,7 +323,7 @@ def tailor(
     cover_letter: bool = typer.Option(None, "--cover-letter/--no-cover-letter", help="Override tailor.cover_letter."),
     regenerate: bool = typer.Option(False, "--regenerate", help="Ignore cached LLM plans."),
 ) -> None:
-    """Build one-page tailored resumes (and cover letters) from the master resume."""
+    """Build tailored resumes (and cover letters) from the master resume."""
     from .tailor import run_tailoring
 
     db.init_db()
@@ -403,7 +448,7 @@ def run_daily(
 ) -> None:
     """fetch -> filter -> score -> tailor -> prefill. Never submits anything."""
     steps = [
-        ("fetch", lambda: fetch(hn=None)),
+        ("fetch", lambda: fetch(hn=None, discover=None)),
         ("filter", lambda: filter_cmd(no_llm=False)),
         ("score", lambda: score(top=0, limit=top, rescore=False)),
         ("tailor", lambda: tailor(top=top, job=[], cover_letter=None, regenerate=False)),

@@ -257,9 +257,17 @@ class LLMClient:
     # --- public API ------------------------------------------------------
 
     async def complete_json(
-        self, prompt: Prompt, schema: type[T], use_cache: bool = True, **variables: Any
+        self,
+        prompt: Prompt,
+        schema: type[T],
+        use_cache: bool = True,
+        json_schema: Optional[dict] = None,
+        **variables: Any,
     ) -> T:
         """Run a versioned prompt and return a validated `schema` instance.
+
+        `json_schema` overrides the decoding schema sent to the model (e.g. with
+        enums pinning ids to real values); the reply is still validated by `schema`.
 
         Transport errors retry with exponential backoff; invalid JSON or a
         schema mismatch retries with the validation error fed back to the
@@ -276,7 +284,7 @@ class LLMClient:
                     pass  # schema changed since this was cached; recompute
 
         model = self.task_model(prompt)
-        json_schema = schema.model_json_schema()
+        json_schema = json_schema or schema.model_json_schema()
         convo = list(messages)
         last_error = ""
         for attempt in range(self.max_retries + 1):
