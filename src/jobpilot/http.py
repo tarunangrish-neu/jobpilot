@@ -24,6 +24,14 @@ from . import config
 log = logging.getLogger(__name__)
 
 
+def _retry_after(value: Optional[str], default: float) -> float:
+    """Seconds to wait from a Retry-After header (seconds form), capped at a minute."""
+    try:
+        return min(max(float(value), 0.0), 60.0) if value is not None else min(default, 60.0)
+    except ValueError:  # the HTTP-date form: rare, just use the default
+        return min(default, 60.0)
+
+
 class PoliteClient:
     def __init__(self, use_cache: bool = True, fresh: bool = False) -> None:
         """`fresh`: never answer from the cache unless the call says the response is reusable
@@ -39,6 +47,9 @@ class PoliteClient:
         self._sem = asyncio.Semaphore(int(cfg.get("concurrency", 4)))
         self._host_locks: dict[str, asyncio.Lock] = defaultdict(asyncio.Lock)
         self._last_request: dict[str, float] = {}
+        # A host that answered 429/503 gets a longer spacing for the rest of the run.
+        self._host_interval: dict[str, float] = {}
+        self.max_retries: int = int(cfg.get("rate_limit_retries", 3))
         self._client: Optional[httpx.AsyncClient] = None
 
         self.cache_dir: Path = config.project_root() / ".cache" / "http"
@@ -90,7 +101,7 @@ class PoliteClient:
         """Sleep until >= min_interval seconds since the last hit on this host."""
         last = self._last_request.get(host)
         if last is not None:
-            wait = self.min_interval - (time.monotonic() - last)
+            wait = self._host_interval.get(host, self.min_interval) - (time.monotonic() - last)
             if wait > 0:
                 await asyncio.sleep(wait)
 
@@ -113,6 +124,25 @@ class PoliteClient:
         finally:
             self._sem.release()
 
+    async def _send(self, host: str, call) -> httpx.Response:
+        """Run one request in its slot; on 429/503, back off as the site asks and retry.
+
+        Another process hitting the same site (the UI's fetch while a terminal fetch
+        runs) doubles the rate the site sees, so a 429 also slows this host down for
+        the rest of the run instead of just retrying at the same pace.
+        """
+        for attempt in range(self.max_retries + 1):
+            async with self._slot(host):
+                resp = await call()
+            if resp.status_code not in (429, 503) or attempt == self.max_retries:
+                return resp
+            delay = _retry_after(resp.headers.get("retry-after"), default=5.0 * 2**attempt)
+            self._host_interval[host] = min(max(self._host_interval.get(host, self.min_interval) * 2, 2.0), 30.0)
+            log.info("%s answered %s; waiting %.0fs, then %.0fs between requests",
+                     host, resp.status_code, delay, self._host_interval[host])
+            await asyncio.sleep(delay)
+        return resp
+
     async def get_text(
         self, url: str, headers: Optional[dict[str, str]] = None, reuse: bool = False
     ) -> tuple[int, str]:
@@ -131,8 +161,7 @@ class PoliteClient:
             raise RuntimeError("PoliteClient must be used as an async context manager")
 
         host = httpx.URL(url).host or url
-        async with self._slot(host):
-            resp = await self._client.get(url, headers=headers)
+        resp = await self._send(host, lambda: self._client.get(url, headers=headers))
 
         body = resp.text
         # Only cache successes; a transient 5xx should not be sticky.
@@ -152,8 +181,7 @@ class PoliteClient:
             raise RuntimeError("PoliteClient must be used as an async context manager")
 
         host = httpx.URL(url).host or url
-        async with self._slot(host):
-            resp = await self._client.post(url, json=payload, headers=headers)
+        resp = await self._send(host, lambda: self._client.post(url, json=payload, headers=headers))
         try:
             return resp.status_code, resp.json()
         except json.JSONDecodeError:

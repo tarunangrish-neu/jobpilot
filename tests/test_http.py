@@ -108,3 +108,32 @@ def test_fresh_client_refetches_listings_but_reuses_detail_pages(temp_root):
     assert client._read_cache("https://example.com/board") is None
     assert client._read_cache("https://example.com/board", reuse=True)["body"] == "old listing"
     assert PoliteClient()._read_cache("https://example.com/board")["body"] == "old listing"
+
+
+def test_429_waits_as_asked_retries_and_slows_that_host(temp_root):
+    """A 429 must not drop the board: wait out Retry-After, retry, and space that host wider."""
+    import httpx
+
+    from jobpilot.http import PoliteClient
+
+    calls = []
+
+    def handler(request):
+        calls.append(request.url.host)
+        if len(calls) == 1:
+            return httpx.Response(429, headers={"Retry-After": "0"})
+        return httpx.Response(200, text="ok")
+
+    async def run():
+        client = PoliteClient(use_cache=False)
+        client.min_interval = 0.0
+        client._client = httpx.AsyncClient(transport=httpx.MockTransport(handler))
+        try:
+            return await client.get_text("https://apply.workable.com/api/v1/widget/accounts/x"), client
+        finally:
+            await client._client.aclose()
+
+    (status, body), client = asyncio.run(run())
+    assert (status, body) == (200, "ok")
+    assert calls == ["apply.workable.com"] * 2
+    assert client._host_interval["apply.workable.com"] >= 2.0
