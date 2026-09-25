@@ -25,13 +25,16 @@ log = logging.getLogger(__name__)
 
 
 class PoliteClient:
-    def __init__(self, use_cache: bool = True) -> None:
+    def __init__(self, use_cache: bool = True, fresh: bool = False) -> None:
+        """`fresh`: never answer from the cache unless the call says the response is reusable
+        (`reuse=True`, for per-posting detail pages); responses are still written to it."""
         cfg = config.settings().get("http", {})
         self.user_agent: str = cfg.get("user_agent", "JobPilot/0.1")
         self.min_interval: float = float(cfg.get("min_seconds_between_requests_per_host", 1.0))
         self.timeout: float = float(cfg.get("timeout_seconds", 30))
         self.cache_ttl: float = float(cfg.get("cache_ttl_hours", 6)) * 3600.0
         self.use_cache = use_cache
+        self.fresh = fresh
 
         self._sem = asyncio.Semaphore(int(cfg.get("concurrency", 4)))
         self._host_locks: dict[str, asyncio.Lock] = defaultdict(asyncio.Lock)
@@ -58,8 +61,8 @@ class PoliteClient:
     def _cache_file(self, url: str) -> Path:
         return self.cache_dir / f"{hashlib.sha256(url.encode()).hexdigest()}.json"
 
-    def _read_cache(self, url: str) -> Optional[dict[str, Any]]:
-        if not self.use_cache:
+    def _read_cache(self, url: str, reuse: bool = False) -> Optional[dict[str, Any]]:
+        if not self.use_cache or (self.fresh and not reuse):
             return None
         f = self._cache_file(url)
         if not f.exists():
@@ -110,13 +113,17 @@ class PoliteClient:
         finally:
             self._sem.release()
 
-    async def get_text(self, url: str, headers: Optional[dict[str, str]] = None) -> tuple[int, str]:
+    async def get_text(
+        self, url: str, headers: Optional[dict[str, str]] = None, reuse: bool = False
+    ) -> tuple[int, str]:
         """GET a URL, returning (status_code, body). Cached and rate-limited.
 
         `headers` are extra request headers (e.g. an API key); they are not part
-        of the cache key, so never vary the response by header alone.
+        of the cache key, so never vary the response by header alone. `reuse`
+        marks a response that rarely changes (one posting's details), which a
+        `fresh` client may still serve from the cache.
         """
-        cached = self._read_cache(url)
+        cached = self._read_cache(url, reuse)
         if cached is not None:
             return cached["status"], cached["body"]
 
@@ -152,9 +159,11 @@ class PoliteClient:
         except json.JSONDecodeError:
             return resp.status_code, None
 
-    async def get_json(self, url: str, headers: Optional[dict[str, str]] = None) -> tuple[int, Any]:
+    async def get_json(
+        self, url: str, headers: Optional[dict[str, str]] = None, reuse: bool = False
+    ) -> tuple[int, Any]:
         """GET a URL and parse JSON. Returns (status, parsed-or-None)."""
-        status, body = await self.get_text(url, headers=headers)
+        status, body = await self.get_text(url, headers=headers, reuse=reuse)
         if status != 200:
             return status, None
         try:

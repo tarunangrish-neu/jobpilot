@@ -659,8 +659,9 @@ def _fetch_card(paused: bool) -> None:
     with st.container(border=True):
         go, opts = st.columns([1, 3], vertical_alignment="center")
         hn = opts.checkbox("Include HN Who's Hiring (slow: ~1 LLM call per comment)", key="opt-fetch-hn")
-        opts.caption("Every board in companies.yaml, fetched in parallel (≥1 s between requests to the same "
-                     "site), then screened with your fetch filters. Responses are cached for 6 h.")
+        opts.caption("Asks every board in companies.yaml again, in parallel (≥1 s between requests to the "
+                     "same site), so each fetch picks up jobs posted since the last one; then screens them "
+                     "with your fetch filters. Only per-job detail pages are reused from the cache.")
         if go.button("Fetch openings", key="run-fetch", type="primary", disabled=paused, width="stretch"):
             _start("fetch", ["--hn" if hn else "--no-hn"])
         _filters_editor(paused)
@@ -689,6 +690,8 @@ def _filtered(rows: list[dict]) -> tuple[list[dict], tuple, bool]:
     max_years = YEARS_ASKED[years.selectbox("Experience asked", list(YEARS_ASKED), key="jobs-years",
                                             help="Jobs whose description never states years are kept.")]
     hide_blocked = flags1.checkbox("Hide sponsorship blockers", key="jobs-noblock")
+    sponsors = flags1.checkbox("H-1B sponsors only", key="jobs-h1b",
+                               help="Companies with H-1B approvals in the USCIS H-1B Employer Data Hub.")
     untailored = flags1.checkbox("Not tailored yet", key="jobs-untailored")
     show_screened = flags2.checkbox("Show screened-out jobs", key="jobs-screened",
                                     help="Jobs your fetch filters dropped; the reason is in 'Screened out because'.")
@@ -701,7 +704,7 @@ def _filtered(rows: list[dict]) -> tuple[list[dict], tuple, bool]:
             continue
         if r["status"] in actions.DONE_STATUSES and not show_done:
             continue
-        if (hide_blocked and r["sponsorship"]) or (untailored and r["tailored"]):
+        if (hide_blocked and r["sponsorship"]) or (untailored and r["tailored"]) or (sponsors and not r["h1b"]):
             continue
         if cutoff and (r["posted"] is None or r["posted"] < cutoff):
             continue
@@ -719,7 +722,7 @@ def _filtered(rows: list[dict]) -> tuple[list[dict], tuple, bool]:
                 continue
         out.append(r)
     settings = (tuple(words), days, tuple(sorted(kinds)), tuple(sorted(levels)), tuple(sorted(companies)),
-                max_years, hide_blocked, untailored, show_screened, show_done)
+                max_years, hide_blocked, sponsors, untailored, show_screened, show_done)
     return out, settings, show_screened
 
 
@@ -728,7 +731,7 @@ def _openings_table(paused: bool) -> None:
     view, settings, show_screened = _filtered(rows)
     # Filled in after the table, but shown above it: the button is the next step, so keep it in view.
     bar = st.container(border=True)
-    columns = ["apply", "company", "title", "type", "level", "years", "location", "posted", "tailored",
+    columns = ["apply", "company", "h1b", "title", "type", "level", "years", "location", "posted", "tailored",
                "sponsorship"] + (["why_hidden"] if show_screened else []) + ["status"]
     table = st.dataframe(
         view, hide_index=True, width="stretch", height=520, on_select="rerun", selection_mode="multi-row",
@@ -736,6 +739,9 @@ def _openings_table(paused: bool) -> None:
         column_config={
             "apply": st.column_config.LinkColumn("Apply", display_text="Apply ↗", width="small"),
             "company": st.column_config.TextColumn("Company"),
+            "h1b": st.column_config.NumberColumn("H-1B", width="small", format="%d",
+                                                 help="H-1B approvals, USCIS H-1B Employer Data Hub (FY2023). "
+                                                      "0 = none on record."),
             "title": st.column_config.TextColumn("Role", width=320),
             "type": st.column_config.TextColumn("Type"),
             "level": st.column_config.TextColumn("Level", width="small"),

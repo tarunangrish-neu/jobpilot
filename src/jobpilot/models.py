@@ -92,6 +92,8 @@ class Company(SQLModel, table=True):
     everify_confirmed: bool = False
     notes: str = ""
     active: bool = True
+    # H-1B approvals in the USCIS H-1B Employer Data Hub (companies.yaml `h1b_approvals`); 0 = none on record.
+    h1b_approvals: int = 0
 
     __table_args__ = (UniqueConstraint("ats", "token", name="uq_company_board"),)
 

@@ -112,7 +112,8 @@ async def fetch(client, company: dict[str, Any]) -> list[JobPosting]:
     for req in keep[: cfg["max_details"]]:
         finder = quote(f'ById;Id="{req["Id"]}",siteNumber={site}', safe=';=,')
         status, body = await client.get_json(
-            f"https://{host}{_API}recruitingCEJobRequisitionDetails?expand=all&onlyData=true&finder={finder}"
+            f"https://{host}{_API}recruitingCEJobRequisitionDetails?expand=all&onlyData=true&finder={finder}",
+            reuse=True,
         )
         items = (body or {}).get("items") if status == 200 else None
         postings.append(parse_detail(items[0] if items else {}, req, token, company["name"]))

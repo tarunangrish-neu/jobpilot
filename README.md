@@ -54,9 +54,11 @@ make                                 # set up anything missing, then open the UI
 
 The UI opens on the **Jobs** page. No filter or rank stage, and no LLM until you tailor:
 
-1. **Fetch openings** pulls every board in `companies.yaml` in parallel (at least 1 s between
-   requests to the same site; a cold fetch of ~280 boards takes ~5 minutes, about a minute
-   within the 6 h cache window), then **screens** every job with your fetch filters.
+1. **Fetch openings** asks every board in `companies.yaml` again, in parallel (at least 1 s
+   between requests to the same site; ~280 boards take ~5 minutes), so every fetch picks up
+   jobs posted since the last one. Only per-job detail pages (Workday, Oracle, Eightfold,
+   SmartRecruiters) are reused from the cache; `jobpilot fetch --cached` reuses listings
+   too. It then **screens** every job with your fetch filters.
 2. **⚙️ Fetch filters** (under the Fetch button) edits those filters and re-screens every
    fetched job in seconds, with no network or LLM: title contains / doesn't contain,
    allowed locations, remote-anywhere, posted within N days, max years of experience the
@@ -69,7 +71,9 @@ The UI opens on the **Jobs** page. No filter or rank stage, and no LLM until you
    **Apply ↗** link per row. It narrows instantly by search, posted within, role type
    (Backend, Full-stack, Infra/Platform/SRE, ML/AI, Data, ...), level (Entry, Mid, Senior,
    Staff+, Lead, Manager), company, years of experience asked, sponsorship blockers,
-   "not tailored yet", and can show screened-out jobs with the reason.
+   **H-1B sponsors only** (the **H-1B** column is the company's FY2023 approvals in the
+   USCIS H-1B Employer Data Hub, from `h1b_approvals` in companies.yaml), "not tailored
+   yet", and can show screened-out jobs with the reason.
 4. **Tick rows** and click **✨ Tailor resume + cover letter** (the bar above the table):
    one background run, ~45 s per job on local Ollama, live log at the top of the page.
 5. **Ready to apply** (sidebar, with a count) lists every tailored job: **Apply on company
@@ -131,7 +135,7 @@ makes ~150-250 calls. Levers, biggest first:
    ~3k-token prompt takes ~4 s, or ~0 s when the previous call shared its prefix (prompts put
    the fixed part — instructions, example, resume — first so Ollama reuses its cache). That
    is why tailoring asks for ids, not text, and `tailor.max_rephrasings` exists.
-7. **Reruns are cheap**: HTTP responses (6 h), embeddings, and LLM answers are cached, so
+7. **Reruns are cheap**: per-job detail pages (6 h), embeddings, and LLM answers are cached, so
    re-running a stage only pays for new jobs or changed prompts. `keep_alive: 30m` keeps
    models loaded between stages.
 

@@ -100,7 +100,7 @@ async def fetch(client, company: dict[str, Any]) -> list[JobPosting]:
     keep = [j for j in listings.values() if large.worth_detail(j.get("title", ""), j.get("locationsText", ""))]
     postings: list[JobPosting] = []
     for job in keep[: cfg["max_details"]]:
-        status, body = await client.get_json(f"{_api(token)}{job.get('externalPath', '')}")
+        status, body = await client.get_json(f"{_api(token)}{job.get('externalPath', '')}", reuse=True)
         info = (body or {}).get("jobPostingInfo") if status == 200 else None
         if info:
             posting = parse_detail(info, job, token, company["name"])

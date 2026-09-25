@@ -96,7 +96,7 @@ async def fetch(client, company: dict[str, Any]) -> list[JobPosting]:
     postings = []
     for pos in keep[: cfg["max_details"]]:
         params = urlencode({"position_id": pos["id"], "domain": domain, "hl": "en"})
-        status, body = await client.get_json(f"https://{host}/api/pcsx/position_details?{params}")
+        status, body = await client.get_json(f"https://{host}/api/pcsx/position_details?{params}", reuse=True)
         detail = (body or {}).get("data") if status == 200 else None
         if detail:
             postings.append(parse_detail(detail, pos, token, company["name"]))

@@ -67,10 +67,14 @@ def init() -> None:
     typer.echo(f"{len(index)} companies registered from config/companies.yaml")
 
 
-async def _fetch_all(entries: list[dict[str, Any]]) -> dict[str, Any]:
-    """Fetch every configured board concurrently under the shared rate limiter."""
+async def _fetch_all(entries: list[dict[str, Any]], fresh: bool = True) -> dict[str, Any]:
+    """Fetch every configured board concurrently under the shared rate limiter.
+
+    `fresh` asks every board again (only per-posting detail pages may come from the cache),
+    so each fetch sees the jobs posted since the last one.
+    """
     results: dict[str, Any] = {}
-    async with PoliteClient() as client:
+    async with PoliteClient(fresh=fresh) as client:
 
         async def one(entry: dict[str, Any]) -> None:
             adapter = ADAPTERS.get(entry["ats"])
@@ -98,7 +102,7 @@ def _fetch_hn() -> list[str]:
     from .sources import hn
 
     async def run():
-        async with PoliteClient() as client:
+        async with PoliteClient(fresh=True) as client:  # new comments arrive all month
             return await hn.fetch(client, LLMClient(), config.settings().get("hn", {}))
 
     postings, info = asyncio.run(run())
@@ -164,6 +168,9 @@ def fetch(
     screen: bool = typer.Option(
         True, "--screen/--no-screen", help="Apply your filters (no LLM) to every unreviewed job afterwards."
     ),
+    cached: bool = typer.Option(
+        False, "--cached", help="Reuse board listings fetched in the last http.cache_ttl_hours instead of asking again."
+    ),
 ) -> None:
     """Pull postings from every active board in config/companies.yaml (and HN if enabled), then screen them."""
     run_search = config.settings().get("discovery", {}).get("enabled", False) if discover is None else discover
@@ -176,7 +183,7 @@ def fetch(
 
     db.init_db()
     include_hn = config.settings().get("hn", {}).get("enabled", False) if hn is None else hn
-    results = asyncio.run(_fetch_all(entries))
+    results = asyncio.run(_fetch_all(entries, fresh=not cached))
 
     rows: list[list[str]] = []
     with db.session() as sess:

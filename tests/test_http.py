@@ -93,3 +93,18 @@ def test_a_queued_host_does_not_hold_slots_other_hosts_need(temp_root):
     assert other_at < 0.2
     gaps = [b - a for a, b in zip(same_host, same_host[1:])]
     assert all(g >= 0.29 for g in gaps)
+
+
+def test_fresh_client_refetches_listings_but_reuses_detail_pages(temp_root):
+    """Every fetch must see new postings; a posting's own detail page may come from the cache."""
+    from jobpilot import config
+    from jobpilot.http import PoliteClient
+
+    config.settings()["http"]["cache_ttl_hours"] = 6
+    client = PoliteClient(fresh=True)
+    client.cache_dir.mkdir(parents=True, exist_ok=True)
+    client._write_cache("https://example.com/board", {"status": 200, "body": "old listing"})
+
+    assert client._read_cache("https://example.com/board") is None
+    assert client._read_cache("https://example.com/board", reuse=True)["body"] == "old listing"
+    assert PoliteClient()._read_cache("https://example.com/board")["body"] == "old listing"

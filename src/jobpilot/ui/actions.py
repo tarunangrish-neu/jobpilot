@@ -131,17 +131,18 @@ def openings() -> list[dict[str, Any]]:
         query = (
             select(Job.id, Job.title, Job.location, Job.remote, Job.url, Job.apply_url, Job.posted_at,
                    Job.fetched_at, Job.status, Job.source, Job.content_hash, Job.visa_flag,
-                   Job.description_text, Job.filter_reason, Company.name)
+                   Job.description_text, Job.filter_reason, Company.name, Company.h1b_approvals)
             .join(Company, Job.company_id == Company.id, isouter=True)
             .order_by(Job.posted_at.desc().nulls_last(), Job.id.desc())
         )
         rows = []
         for (job_id, title, location, remote, url, apply_url, posted, fetched, status, source, chash, visa,
-             text, reason, company) in sess.exec(query):
+             text, reason, company, h1b) in sess.exec(query):
             hit = blocking.search(text.lower()) if blocking and text else None
             rows.append({
                 "id": job_id,
                 "company": company or "",
+                "h1b": h1b or 0,
                 "title": title,
                 "location": location or ("Remote" if remote else ""),
                 "remote": bool(remote),

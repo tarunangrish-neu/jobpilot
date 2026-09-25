@@ -151,3 +151,23 @@ def test_screen_rules_and_rescreen_are_reversible(jobs_db):
     rescreen()
     with db.session() as sess:
         assert sess.get(Job, jobs_db["a"]).filter_reason == "company: 'Acme' excluded"
+
+
+def test_h1b_approvals_sync_from_companies_yaml_and_filter(temp_root):
+    from jobpilot import db
+    from jobpilot.models import Company, JobPosting
+    from jobpilot.ui import actions
+
+    db.init_db()
+    with db.session() as sess:
+        index = db.sync_companies(sess, [{"name": "Sponsor", "ats": "lever", "token": "sp", "h1b_approvals": 120},
+                                         {"name": "Other", "ats": "lever", "token": "ot"}])
+        for token, cid in (("sp", index[("lever", "sp")]), ("ot", index[("lever", "ot")])):
+            db.upsert_posting(sess, JobPosting(source="lever", external_id=token, company_name=token,
+                                               title=f"Engineer {token}"), cid)
+        sess.commit()
+        # Re-syncing without the key clears it: companies.yaml is the source of truth.
+        db.sync_companies(sess, [{"name": "Sponsor", "ats": "lever", "token": "sp", "h1b_approvals": 95}])
+        assert sess.get(Company, index[("lever", "sp")]).h1b_approvals == 95
+    rows = {r["company"]: r["h1b"] for r in actions.openings()}
+    assert rows == {"Sponsor": 95, "Other": 0}

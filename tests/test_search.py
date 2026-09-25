@@ -26,7 +26,7 @@ class FakeClient:
     def __init__(self, routes):
         self.routes, self.calls = routes, []
 
-    async def get_json(self, url, headers=None):
+    async def get_json(self, url, headers=None, reuse=False):
         self.calls.append((url, headers))
         for prefix, reply in self.routes.items():
             if url.startswith(prefix):

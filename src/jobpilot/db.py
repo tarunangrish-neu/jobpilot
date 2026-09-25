@@ -109,12 +109,11 @@ def sync_companies(sess: Session, entries: Iterable[dict[str, Any]]) -> dict[tup
         ).first()
         if existing is None:
             existing = Company(name=entry["name"], ats=ats, token=token)
-            sess.add(existing)
-            sess.flush()
-        else:
-            existing.name = entry["name"]
-            existing.active = entry.get("active", True)
-            sess.add(existing)
+        existing.name = entry["name"]
+        existing.active = entry.get("active", True)
+        existing.h1b_approvals = int(entry.get("h1b_approvals") or 0)
+        sess.add(existing)
+        sess.flush()
         index[(ats, token)] = existing.id
     sess.commit()
     return index

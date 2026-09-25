@@ -110,7 +110,7 @@ async def fetch(client, company: dict[str, Any]) -> list[JobPosting]:
     details: dict[str, dict[str, Any]] = {}
     for job in jobs:
         if worth_detail(job, cfg):
-            status, detail = await client.get_json(DETAIL_URL.format(token=token, id=job["id"]))
+            status, detail = await client.get_json(DETAIL_URL.format(token=token, id=job["id"]), reuse=True)
             if status == 200 and isinstance(detail, dict):
                 details[str(job["id"])] = detail
     return parse({"content": jobs}, company["name"], details)

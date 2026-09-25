@@ -28,7 +28,7 @@ class FakeClient:
                 return reply
         return 404, None
 
-    async def get_json(self, url, headers=None):
+    async def get_json(self, url, headers=None, reuse=False):
         return self._reply(url)
 
     async def post_json(self, url, payload, headers=None):
