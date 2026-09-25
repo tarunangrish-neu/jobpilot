@@ -47,6 +47,15 @@ TECH_TERMS = {
     "elixir", "erlang", "clojure", "zig", "wasm", "webassembly", "nginx", "envoy", "istio",
     "helm", "argocd", "vault", "consul", "nomad", "bazel", "temporal", "celery", "pandas",
     "numpy", "kdb", "flink", "pulsar", "nats", "zookeeper", "etcd", "raft", "paxos",
+    # Frameworks and tools a posting names that a letter must not claim unless the resume does.
+    "angular", "angularjs", "vue", "vuejs", "svelte", "nextjs", "next.js", "nuxt", "redux", "jquery",
+    "webpack", "vite", "tailwind", "sass", "hibernate", "dotnet", ".net", "asp.net", "laravel", "rails",
+    "flutter", "xamarin", "ios", "android", "objective-c", "tableau", "looker", "powerbi", "snowpark",
+    "databricks", "sagemaker", "vertexai", "bedrock", "presto", "trino", "hive", "hbase", "neo4j",
+    "couchbase", "memcached", "openshift", "vmware", "selenium", "cypress", "playwright", "jest",
+    "junit", "pytest", "mocha", "jira", "gitlab", "github", "bitbucket", "matlab", "perl", "bash",
+    "powershell", "cobol", "fortran", "unity", "splunk", "newrelic", "sentry", "pagerduty", "okta",
+    "auth0", "keycloak", "stripe", "twilio", "salesforce", "servicenow", "mulesoft", "informatica",
 }
 
 _TOKEN_RE = re.compile(r"[A-Za-z0-9][A-Za-z0-9.+#]*[A-Za-z0-9+#]|[A-Za-z0-9]")
@@ -178,6 +187,31 @@ _STOPWORDS = {
 }
 
 
+# Everyday professional prose. A letter saying "my experience" or "ensuring quality" claims
+# nothing the resume lacks; only domain words ("subscription", "testing") count as borrowed.
+_GENERIC_PROSE = {
+    "ability", "abilities", "apply", "applying", "application", "applications", "background", "believe",
+    "best", "build", "building", "business", "candidate", "challenge", "challenges", "challenging", "class",
+    "closely", "collaborate", "collaborating", "collaboration", "communication", "company", "complex",
+    "confident", "consideration", "contribute", "contributing", "contribution", "create", "creating",
+    "cross", "culture", "current", "currently", "customer", "customers", "deep", "deliver", "delivering",
+    "delivery", "design", "designing", "develop", "developing", "development", "drive", "driven", "driving",
+    "dynamic", "eager", "effective", "effectively", "efficient", "efficiently", "engineer", "engineering",
+    "engineers", "ensure", "ensuring", "environment", "environments", "excited", "exciting", "experience",
+    "experienced", "experiences", "familiar", "familiarity", "fast", "feature", "features", "focus",
+    "focused", "forward", "grade", "great", "grow", "growth", "hands", "help", "helping", "high", "highly",
+    "impact", "impactful", "include", "includes", "including", "interest", "interested", "involve",
+    "involved", "join", "joining", "knowledge", "lead", "leading", "learn", "learning", "level", "levels",
+    "look", "looking", "love", "maintain", "maintaining", "make", "making", "mission", "opportunity",
+    "opportunities", "operate", "operating", "paced", "part", "passion", "passionate", "position",
+    "problem", "problems", "product", "products", "proficiency", "proficient", "provide", "providing",
+    "quality", "quickly", "range", "recent", "role", "roles", "skill", "skills", "software", "solution",
+    "solutions", "solve", "solving", "strong", "success", "successful", "support", "supporting", "team",
+    "teams", "technical", "technologies", "thank", "tool", "tools", "understand", "understanding", "user",
+    "users", "using", "values", "variety", "various", "wide", "work", "worked", "working", "year", "years",
+}
+
+
 def _stem(word: str) -> str:
     for suffix in ("ing", "ed", "es", "s"):
         if word.endswith(suffix) and len(word) - len(suffix) >= 4:
@@ -204,7 +238,7 @@ def unsupported_claims(sentence: str, facts: ResumeFacts, context: str, company:
     borrowed = []
     # Lowercase words only: names (the company, its products) are the entity check's job.
     for word in re.findall(r"\b[a-z]+\b", sentence):
-        if len(word) < 4 or word in _STOPWORDS:
+        if len(word) < 4 or word in _STOPWORDS or word in _GENERIC_PROSE:
             continue
         s = _stem(word)
         if s in posting and s not in resume and word not in borrowed:
@@ -212,12 +246,15 @@ def unsupported_claims(sentence: str, facts: ResumeFacts, context: str, company:
     return borrowed if len(borrowed) >= 2 else []
 
 
-def verify_free_text(text: str, facts: ResumeFacts, allowed_context: str = "") -> Finding:
+def verify_free_text(text: str, facts: ResumeFacts, allowed_context: str = "", company: str = "") -> Finding:
     """Check prose (cover letters, drafted answers) against the whole resume.
 
     `allowed_context` (company name, job title, the JD) may supply proper
     nouns -- a letter can name the company it is addressed to -- but never
-    numbers or technologies, which would be claims about the candidate.
+    numbers or technologies, which would be claims about the candidate. The
+    `company` itself is always allowed, even when it is also a tech name
+    ("At Stripe", "At Datadog").
     """
     names = facts.vocab | (vocabulary(allowed_context) if allowed_context else set())
-    return _check(text, facts.numbers, facts.vocab, names, facts.tech)
+    own = vocabulary(company) if company else set()
+    return _check(text, facts.numbers, facts.vocab | own, names, facts.tech)

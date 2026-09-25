@@ -151,6 +151,16 @@ validation error, or changed form leaves the browser open and marks the job `nee
 
 ### What tailoring will and won't do
 
+**Layout.** `templates/resume.typ` reproduces the master resume PDF: navy capitalised name,
+the `contact.headline` line, phone | email | labelled links, navy section rules,
+"Title | Company, Location" with the dates right-aligned, justified bullets, projects as
+"Name — text", one-line education, and skill groups under the names you give them in
+`skills:` (e.g. `Data & AI:`). A bullet's `bold:` phrase in master_resume.yaml is set in bold
+wherever the (possibly rephrased) text still contains it. The master is set in Calibri:
+the template uses Calibri or Carlito (its metric twin) when installed or dropped into
+`templates/fonts/`, else PT Sans. The **Ready to apply** page shows every page of the
+resume and cover letter as they print, before you download them.
+
 A tailored resume is your master resume, same length, re-ordered and sharpened for one job:
 the model ranks every bullet against the job's requirements (the most relevant lead each
 role) and can rewrite up to `tailor.max_rephrasings` of the top ones in the XYZ pattern

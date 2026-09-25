@@ -860,15 +860,9 @@ def ready_page() -> None:
 
     st.subheader(f"{r['title']} — {r['company']}")
     st.caption(f"📍 {r['location'] or 'location not stated'} · job #{job_id}")
-    apply_col, resume_col, cover_col, done_col, skip_col = st.columns(5)
+    apply_col, done_col, skip_col, _ = st.columns([1.3, 1, 1, 1.7])
     apply_col.link_button("Apply on company site ↗", r["apply"] or "about:blank", type="primary",
                           disabled=not r["apply"], width="stretch")
-    _download(resume_col, "⬇ Resume PDF", r["resume"], f"dl-resume-{job_id}")
-    if r["cover_letter"]:
-        _download(cover_col, "⬇ Cover letter PDF", r["cover_letter"], f"dl-cover-{job_id}")
-    elif cover_col.button("✨ Write cover letter", key=f"cover-{job_id}", disabled=paused, width="stretch",
-                          help="The resume plan is cached, so this only pays for the letter (~15 s)."):
-        _start("tailor", actions.tailor_args([job_id]))
     if done_col.button("✅ I applied", key=f"applied-{job_id}", width="stretch"):
         actions.mark_applied_manually(job_id)
         st.session_state["flash"] = f"Marked {r['company']} — {r['title']} as applied."
@@ -877,26 +871,40 @@ def ready_page() -> None:
         actions.skip(job_id)
         st.rerun()
 
-    resume_tab, cover_tab, job_tab = st.tabs(["📄 Resume", "✉️ Cover letter", "🧾 Job description"])
+    # Preview first, download after: the images are rendered from the same data and template as the PDF.
+    resume_tab, cover_tab, job_tab = st.tabs(["📄 Resume preview", "✉️ Cover letter preview", "🧾 Job description"])
     with resume_tab:
-        png = actions.resume_preview(job_id)
-        if png:
-            st.image(str(png), width="stretch")
-        else:
-            st.caption("No preview available; download the PDF above.")
-        if st.button("Re-tailor from scratch", key=f"regen-{job_id}", disabled=paused,
-                     help="Ignores the cached plan and asks the model again (~45 s)."):
+        _pages(actions.document_pages(job_id, "resume"), "No preview available; the PDF is still downloadable.")
+        dl, regen, _ = st.columns([1, 1, 2])
+        _download(dl, "⬇ Download resume PDF", r["resume"], f"dl-resume-{job_id}")
+        if regen.button("Re-tailor from scratch", key=f"regen-{job_id}", disabled=paused, width="stretch",
+                        help="Ignores the cached plan and asks the model again (~45 s)."):
             _start("tailor", actions.tailor_args([job_id]) + ["--regenerate"])
     with cover_tab:
-        if r["cover_letter_text"]:
-            st.caption("Copy it into the form's text box, or upload the PDF.")
-            st.code(r["cover_letter_text"], language=None, wrap_lines=True)
+        if r["cover_letter"]:
+            _pages(actions.document_pages(job_id, "cover_letter"), "No preview available.")
+            dl, _ = st.columns([1, 3])
+            _download(dl, "⬇ Download cover letter PDF", r["cover_letter"], f"dl-cover-{job_id}")
+            with st.expander("Plain text, for a form's text box"):
+                st.code(r["cover_letter_text"], language=None, wrap_lines=True)
         else:
-            st.info("No cover letter yet: click **Write cover letter** above. Sentences the fabrication check "
-                    "can't verify against your resume are dropped, so letters are short and factual.")
+            st.info("No cover letter yet. Sentences the fabrication check can't verify against your resume are "
+                    "dropped, so letters are short and factual.")
+            if st.button("✨ Write cover letter", key=f"cover-{job_id}", disabled=paused,
+                         help="The resume plan is cached, so this only pays for the letter (~15 s)."):
+                _start("tailor", actions.tailor_args([job_id]))
     with job_tab:
         d = actions.detail(job_id)
         st.markdown(_plain(d.job.description_text) if d and d.job.description_text else "_No description._")
+
+
+def _pages(pages: list, missing: str) -> None:
+    """Document pages side by side, as they print."""
+    if not pages:
+        st.caption(missing)
+        return
+    for col, page in zip(st.columns(len(pages), border=True), pages):
+        col.image(str(page), width="stretch", caption=f"Page {page.stem.rsplit('-', 1)[1]} of {len(pages)}")
 
 
 PAGES = {"Jobs": jobs_page, READY: ready_page, "Stats": stats_page}

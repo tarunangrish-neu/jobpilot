@@ -19,6 +19,8 @@ class Bullet(BaseModel):
     id: str
     text: str
     tags: list[str] = Field(default_factory=list)
+    # Formatting only: a phrase of `text` to set in bold (the resume's own emphasis).
+    bold: str = ""
 
 
 class Contact(BaseModel):
@@ -26,6 +28,7 @@ class Contact(BaseModel):
     email: str = ""
     phone: str = ""
     location: str = ""
+    headline: str = ""  # the line under your name, e.g. "Senior Software Engineer | Backend"
 
 
 class Experience(BaseModel):

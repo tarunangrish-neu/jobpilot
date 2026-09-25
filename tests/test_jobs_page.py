@@ -105,7 +105,7 @@ def test_ready_page_applies_and_writes_missing_cover_letters(jobs_db, monkeypatc
     at.sidebar.radio(key="nav").set_value("Ready to apply").run()
     assert not at.exception
     assert at.title[0].value == "Ready to apply"
-    assert any(b.label == "⬇ Resume PDF" for b in at.get("download_button"))
+    assert any(b.label == "⬇ Download resume PDF" for b in at.get("download_button"))
 
     # The fixture's letter exists only as text, not a PDF: offer to write one.
     next(b for b in at.button if b.label == "✨ Write cover letter").click().run()

@@ -68,7 +68,7 @@ def clean_letter(
             if cliche:
                 dropped.append({"sentence": sentence, "why": f"cliché '{cliche}'"})
                 continue
-            finding = verify_free_text(sentence, facts, allowed_context=context)
+            finding = verify_free_text(sentence, facts, allowed_context=context, company=company)
             if finding:
                 dropped.append({"sentence": sentence, "why": "unsupported: " + ", ".join(finding.items())})
                 continue

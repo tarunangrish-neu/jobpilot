@@ -44,6 +44,8 @@ def render(template: str, data: dict[str, Any], out_pdf: Path) -> int:
 
     common = [
         "--root", str(root),
+        # Fonts you drop in templates/fonts/ (e.g. Carlito or Calibri) win over system fallbacks.
+        "--font-path", str(root / "templates" / "fonts"),
         "--input", f"data=/{data_file.resolve().relative_to(root.resolve()).as_posix()}",
     ]
     template_path = str(root / "templates" / template)

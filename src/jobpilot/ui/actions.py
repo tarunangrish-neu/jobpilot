@@ -322,28 +322,41 @@ def mark_applied_manually(job_id: int) -> None:
         sess.commit()
 
 
-def resume_preview(job_id: int) -> Optional[Path]:
-    """PNG of the tailored resume (Streamlit can't embed PDFs reliably)."""
+def document_pages(job_id: int, kind: str = "resume") -> list[Path]:
+    """PNG per page of the tailored resume or cover letter (Streamlit can't embed PDFs reliably).
+
+    Rendered from the same JSON and template as the PDF, so the preview is the PDF. Cached
+    next to it and redrawn whenever the data is newer.
+    """
     from ..tailor import output_dir
     from ..tailor.render import RenderError, _run, _typst
 
     out = output_dir(job_id)
-    data = out / "resume.json"
-    png = out / "resume.png"
+    data = out / f"{kind}.json"
     if not data.exists():
-        return None
-    if png.exists() and png.stat().st_mtime >= data.stat().st_mtime:
-        return png
+        return []
+    pages = sorted(out.glob(f"{kind}-page-*.png"), key=lambda p: int(p.stem.rsplit("-", 1)[1]))
+    if pages and all(p.stat().st_mtime >= data.stat().st_mtime for p in pages):
+        return pages
+    for old in pages:
+        old.unlink()
     root = config.project_root()
     try:
         _run([
-            _typst(), "compile", "--root", str(root),
+            _typst(), "compile", "--root", str(root), "--font-path", str(root / "templates" / "fonts"),
             "--input", f"data=/{data.resolve().relative_to(root.resolve()).as_posix()}",
-            str(root / "templates" / "resume.typ"), str(png), "--ppi", "110",
+            # {p}: one image per page; a single-name PNG fails for a two-page resume.
+            str(root / "templates" / f"{kind}.typ"), str(out / f"{kind}-page-{{p}}.png"), "--ppi", "110",
         ])
     except RenderError:
-        return None
-    return png if png.exists() else None
+        return []
+    return sorted(out.glob(f"{kind}-page-*.png"), key=lambda p: int(p.stem.rsplit("-", 1)[1]))
+
+
+def resume_preview(job_id: int) -> Optional[Path]:
+    """First page of the tailored resume (the old review page shows one image)."""
+    pages = document_pages(job_id)
+    return pages[0] if pages else None
 
 
 def stats() -> dict[str, Any]:

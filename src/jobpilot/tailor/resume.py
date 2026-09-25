@@ -145,6 +145,29 @@ def _shape_problem(original: str, rephrase: str, facts: ResumeFacts) -> str:
     return ""
 
 
+LINK_LABELS = {"linkedin": "LinkedIn", "github": "GitHub", "portfolio": "Portfolio", "website": "Website"}
+
+
+def _contact_block(resume: MasterResume) -> dict[str, Any]:
+    """Header data: name, headline, phone | email | labelled links (your resume's order)."""
+    c = resume.contact
+    return {
+        "name": c.name,
+        "headline": c.headline,
+        "items": _contact_items(resume),
+        "plain": [i for i in (c.phone, c.email, c.location) if i],
+        "links": [{"label": LINK_LABELS.get(k.lower(), k.replace("_", " ").title()), "url": url}
+                  for k, url in resume.links.items() if url],
+    }
+
+
+def _group_label(group: str) -> str:
+    """`cloud_infra` -> "Cloud Infra"; a key already written as a label ("Data & AI") is kept."""
+    if group != group.lower() or any(ch in group for ch in " &/"):
+        return group
+    return group.replace("_", " ").title()
+
+
 def _contact_items(resume: MasterResume) -> list[str]:
     items = [resume.contact.email, resume.contact.phone, resume.contact.location]
     items += [
@@ -191,21 +214,28 @@ def build_document(
             report.rephrased.append(bid)
             texts[bid] = new
 
+    def picked(bullets) -> list:
+        return sorted((b for b in bullets if b.id in rank), key=lambda b: rank[b.id])
+
     def ordered(bullets) -> list[str]:
-        picked = sorted((b for b in bullets if b.id in rank), key=lambda b: rank[b.id])
-        return [texts[b.id] for b in picked]
+        return [texts[b.id] for b in picked(bullets)]
+
+    def bold(bullets) -> list[str]:
+        # The master's bold phrase, only while the (maybe rephrased) text still contains it.
+        return [b.bold if b.bold and b.bold in texts[b.id] else "" for b in picked(bullets)]
 
     experience = []
     for e in resume.experience:
-        bullets = ordered(e.bullets)
+        bullets, emphasis = ordered(e.bullets), bold(e.bullets)
         # Keep every role on the page so the timeline has no gaps.
         if not bullets and e.bullets:
-            bullets = [e.bullets[0].text]
+            bullets, emphasis = [e.bullets[0].text], [e.bullets[0].bold]
         experience.append(
-            {"title": e.title, "company": e.company, "dates": e.dates, "location": e.location, "bullets": bullets}
+            {"title": e.title, "company": e.company, "dates": e.dates, "location": e.location, "bullets": bullets,
+             "bold": emphasis}
         )
     projects = [
-        {"name": p.name, "dates": p.dates, "bullets": ordered(p.bullets)}
+        {"name": p.name, "dates": p.dates, "bullets": ordered(p.bullets), "bold": bold(p.bullets)}
         for p in resume.projects
         if ordered(p.bullets)
     ]
@@ -222,14 +252,14 @@ def build_document(
     for group, items in resume.skills.items():
         keep = sorted((s for s in items if s in order), key=order.get) if order else list(items)
         if keep:
-            skills.append({"group": group.replace("_", " ").title(), "items": keep})
+            skills.append({"group": _group_label(group), "items": keep})
 
     summary_key = plan.summary if plan.summary in resume.summary else next(iter(resume.summary), "")
     report.summary_key = summary_key
     report.bullets = list(selected)
 
     doc = {
-        "contact": {"name": resume.contact.name, "items": _contact_items(resume)},
+        "contact": _contact_block(resume),
         "summary": resume.summary.get(summary_key, ""),
         "experience": experience,
         "projects": projects,

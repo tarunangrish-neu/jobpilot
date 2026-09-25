@@ -24,15 +24,18 @@ companies:
   - name: Stripe
     ats: greenhouse
     token: stripe
+    h1b_approvals: 64
   - name: GitLab
     ats: greenhouse
     token: gitlab
   - name: Databricks
     ats: greenhouse
     token: databricks
+    h1b_approvals: 78
   - name: Palantir
     ats: lever
     token: palantir
+    h1b_approvals: 24
   - name: Match Group
     ats: lever
     token: matchgroup
@@ -50,24 +53,29 @@ companies:
   - name: Plaid
     ats: ashby
     token: plaid
+    h1b_approvals: 9
   - name: Brex
     ats: greenhouse
     token: brex
+    h1b_approvals: 17
   - name: Mercury
     ats: greenhouse
     token: mercury
   - name: Chime
     ats: greenhouse
     token: chime
+    h1b_approvals: 20
   - name: Affirm
     ats: greenhouse
     token: affirm
+    h1b_approvals: 40
   - name: Robinhood
     ats: greenhouse
     token: robinhood
   - name: Marqeta
     ats: ashby
     token: marqeta-inc
+    h1b_approvals: 15
   - name: Modern Treasury
     ats: ashby
     token: moderntreasury
@@ -98,17 +106,20 @@ companies:
   - name: Carta
     ats: greenhouse
     token: carta
+    h1b_approvals: 11
 
   # --- crypto / stablecoin -----------------------------------------------------
   - name: Coinbase
     ats: greenhouse
     token: coinbase
+    h1b_approvals: 44
   - name: Circle
     ats: ashby
     token: circle
   - name: Anchorage Digital
     ats: lever
     token: anchorage
+    h1b_approvals: 4
   - name: Fireblocks
     ats: greenhouse
     token: fireblocks
@@ -132,9 +143,11 @@ companies:
   - name: Scale AI
     ats: greenhouse
     token: scaleai
+    h1b_approvals: 3
   - name: Cohere
     ats: ashby
     token: cohere
+    h1b_approvals: 4
   - name: Pinecone
     ats: ashby
     token: pinecone
@@ -170,38 +183,48 @@ companies:
   - name: Temporal
     ats: ashby
     token: temporal
+    h1b_approvals: 3
   - name: Cockroach Labs
     ats: greenhouse
     token: cockroachlabs
   - name: Confluent
     ats: ashby
     token: confluent
+    h1b_approvals: 45
   - name: Datadog
     ats: greenhouse
     token: datadog
+    h1b_approvals: 14
   - name: MongoDB
     ats: greenhouse
     token: mongodb
+    h1b_approvals: 30
   - name: Figma
     ats: greenhouse
     token: figma
+    h1b_approvals: 10
   - name: Notion
     ats: ashby
     token: notion
+    h1b_approvals: 8
   - name: Airtable
     ats: greenhouse
     token: airtable
+    h1b_approvals: 10
   - name: Cloudflare
     ats: greenhouse
     token: cloudflare
+    h1b_approvals: 30
   - name: Twilio
     ats: greenhouse
     token: twilio
+    h1b_approvals: 65
 
   # --- smartrecruiters --------------------------------------------
   - name: ServiceNow
     ats: smartrecruiters
     token: ServiceNow
+    h1b_approvals: 185
   - name: Experian
     ats: smartrecruiters
     token: Experian
@@ -211,6 +234,7 @@ companies:
   - name: NielsenIQ
     ats: smartrecruiters
     token: NielsenIQ
+    h1b_approvals: 13
   - name: Canva
     ats: smartrecruiters
     token: Canva
@@ -233,6 +257,7 @@ companies:
   - name: Block
     ats: greenhouse
     token: block
+    h1b_approvals: 119
   - name: Checkbook
     ats: greenhouse
     token: checkbook
@@ -245,12 +270,14 @@ companies:
   - name: Gusto
     ats: greenhouse
     token: gusto
+    h1b_approvals: 7
   - name: Highnote
     ats: greenhouse
     token: highnote
   - name: Justworks
     ats: greenhouse
     token: justworks
+    h1b_approvals: 6
   - name: Melio
     ats: greenhouse
     token: melio
@@ -299,6 +326,7 @@ companies:
   - name: Ripple
     ats: greenhouse
     token: ripple
+    h1b_approvals: 17
   - name: Rutter
     ats: ashby
     token: rutter
@@ -308,6 +336,7 @@ companies:
   - name: Socure
     ats: ashby
     token: socure
+    h1b_approvals: 5
   - name: Spade
     ats: ashby
     token: spade
@@ -317,12 +346,14 @@ companies:
   - name: Toast
     ats: greenhouse
     token: toast
+    h1b_approvals: 8
   - name: Wealthsimple
     ats: ashby
     token: wealthsimple
   - name: Zuora
     ats: greenhouse
     token: zuora
+    h1b_approvals: 14
 
   # --- fintech / investing (added 2026-09-23; each board verified live) -----------------------------------------
   - name: Acorns
@@ -340,18 +371,22 @@ companies:
   - name: Blend
     ats: greenhouse
     token: blend
+    h1b_approvals: 10
   - name: Branch
     ats: greenhouse
     token: branch
   - name: Dave
     ats: ashby
     token: dave
+    h1b_approvals: 4
   - name: DriveWealth
     ats: greenhouse
     token: drivewealth
+    h1b_approvals: 9
   - name: Earnin
     ats: greenhouse
     token: earnin
+    h1b_approvals: 11
   - name: Figure Lending
     ats: greenhouse
     token: figure
@@ -393,6 +428,7 @@ companies:
   - name: Ava Labs
     ats: ashby
     token: ava-labs
+    h1b_approvals: 3
   - name: Blockdaemon
     ats: ashby
     token: blockdaemon
@@ -456,6 +492,7 @@ companies:
   - name: Stellar Development Foundation
     ats: ashby
     token: stellar
+    h1b_approvals: 10
   - name: Succinct
     ats: ashby
     token: succinct
@@ -545,6 +582,7 @@ companies:
   - name: Labelbox
     ats: greenhouse
     token: labelbox
+    h1b_approvals: 3
   - name: Lambda
     ats: ashby
     token: lambda
@@ -643,9 +681,11 @@ companies:
   - name: Amplitude
     ats: greenhouse
     token: amplitude
+    h1b_approvals: 8
   - name: Astronomer
     ats: ashby
     token: astronomer
+    h1b_approvals: 5
   - name: Buildkite
     ats: greenhouse
     token: buildkite
@@ -667,6 +707,7 @@ companies:
   - name: Cribl
     ats: greenhouse
     token: cribl
+    h1b_approvals: 5
   - name: Depot
     ats: ashby
     token: depot
@@ -685,6 +726,7 @@ companies:
   - name: Fivetran
     ats: greenhouse
     token: fivetran
+    h1b_approvals: 4
   - name: Grafana Labs
     ats: greenhouse
     token: grafanalabs
@@ -703,6 +745,7 @@ companies:
   - name: Imply
     ats: greenhouse
     token: imply
+    h1b_approvals: 3
   - name: Inngest
     ats: ashby
     token: inngest
@@ -727,6 +770,7 @@ companies:
   - name: Mixpanel
     ats: greenhouse
     token: mixpanel
+    h1b_approvals: 5
   - name: MotherDuck
     ats: ashby
     token: motherduck
@@ -763,9 +807,11 @@ companies:
   - name: Sigma Computing
     ats: greenhouse
     token: sigmacomputing
+    h1b_approvals: 12
   - name: SingleStore
     ats: greenhouse
     token: singlestore
+    h1b_approvals: 4
   - name: Speakeasy
     ats: ashby
     token: speakeasy
@@ -810,51 +856,64 @@ companies:
   - name: Accenture
     ats: workday
     token: accenture.wd103/AccentureCareers
+    h1b_approvals: 998
   - name: Adobe
     ats: workday
     token: adobe.wd5/external_experienced
+    h1b_approvals: 221
   - name: Bank of America
     ats: workday
     token: ghr.wd1/Lateral-US
   - name: BlackRock
     ats: workday
     token: blackrock.wd1/BlackRock_Professional
+    h1b_approvals: 3
   - name: CME Group
     ats: workday
     token: cmegroup.wd1/cme_careers
   - name: Capital One
     ats: workday
     token: capitalone.wd12/Capital_One
+    h1b_approvals: 253
   - name: Cisco
     ats: workday
     token: cisco.wd5/Cisco_Careers
+    h1b_approvals: 831
   - name: Citi
     ats: workday
     token: citi.wd5/2
   - name: Fidelity Investments
     ats: workday
     token: fmr.wd1/FidelityCareers
+    h1b_approvals: 715
   - name: Intel
     ats: workday
     token: intel.wd1/External
+    h1b_approvals: 1120
   - name: Mastercard
     ats: workday
     token: mastercard.wd1/CorporateCareers
+    h1b_approvals: 286
   - name: Morgan Stanley
     ats: workday
     token: ms.wd5/External
+    h1b_approvals: 284
   - name: NVIDIA
     ats: workday
     token: nvidia.wd5/NVIDIAExternalCareerSite
+    h1b_approvals: 394
   - name: Nasdaq
     ats: workday
     token: nasdaq.wd1/Global_External_Site
+    h1b_approvals: 3
   - name: PayPal
     ats: workday
     token: paypal.wd1/jobs
+    h1b_approvals: 342
   - name: Salesforce
     ats: workday
     token: salesforce.wd12/External_Career_Site
+    h1b_approvals: 498
   - name: State Street
     ats: workday
     token: statestreet.wd1/Global
@@ -864,21 +923,616 @@ companies:
   - name: Vanguard
     ats: workday
     token: vanguard.wd5/vanguard_external
+    h1b_approvals: 71
   - name: Workday
     ats: workday
     token: workday.wd5/Workday
+    h1b_approvals: 103
   # --- Amazon (amazon.jobs; token: amazon)
   - name: Amazon
     ats: amazon
     token: amazon
+    h1b_approvals: 4724
   # --- Eightfold (token: <careers host>/<company domain>)
   - name: Microsoft
     ats: eightfold
     token: apply.careers.microsoft.com/microsoft.com
+    h1b_approvals: 2066
   - name: Qualcomm
     ats: eightfold
     token: careers.qualcomm.com/qualcomm.com
+    h1b_approvals: 636
   # --- Oracle Recruiting Cloud (token: <host prefix>/<site number> from <prefix>.oraclecloud.com)
   - name: JPMorgan Chase
     ats: oracle
     token: jpmc.fa/CX_1001
+    h1b_approvals: 1524
+
+  # --- H-1B sponsors (2026-09-25 UTC): employers with FY2023 H-1B approvals in the USCIS
+  # H-1B Employer Data Hub, matched to a public board that was verified live to have open
+  # roles and to be that company's. h1b_approvals = FY2023 approvals (initial + continuing).
+  - name: Synechron
+    ats: recruitee
+    token: synechron
+    h1b_approvals: 262
+    # 1 open roles when added; USCIS name: SYNECHRON INC
+  - name: Snowflake
+    ats: ashby
+    token: snowflake
+    h1b_approvals: 110
+    # 349 open roles when added; USCIS name: SNOWFLAKE INC
+  - name: Lyft
+    ats: greenhouse
+    token: lyft
+    h1b_approvals: 99
+    # 178 open roles when added; USCIS name: LYFT INC
+  - name: Waymo
+    ats: greenhouse
+    token: waymo
+    h1b_approvals: 87
+    # 355 open roles when added; USCIS name: WAYMO LLC
+  - name: Zoox
+    ats: lever
+    token: zoox
+    h1b_approvals: 81
+    # 240 open roles when added; USCIS name: ZOOX INC
+  - name: Airbnb
+    ats: greenhouse
+    token: airbnb
+    h1b_approvals: 71
+    # 156 open roles when added; USCIS name: AIRBNB INC
+  - name: Pinterest
+    ats: greenhouse
+    token: pinterest
+    h1b_approvals: 53
+    # 157 open roles when added; USCIS name: PINTEREST INC
+  - name: Health Care
+    ats: lever
+    token: healthcare
+    h1b_approvals: 51
+    # 5 open roles when added; USCIS name: HEALTH CARE SERVICE CORPORATION
+  - name: BILL
+    ats: greenhouse
+    token: billcom
+    h1b_approvals: 49
+    # 46 open roles when added; USCIS name: BILL COM
+  - name: Social Finance
+    ats: greenhouse
+    token: socialfinance
+    h1b_approvals: 49
+    # 4 open roles when added; USCIS name: SOCIAL FINANCE INC
+  - name: Roblox
+    ats: greenhouse
+    token: roblox
+    h1b_approvals: 48
+    # 251 open roles when added; USCIS name: ROBLOX CORPORATION
+  - name: Western Union
+    ats: greenhouse
+    token: westernunion
+    h1b_approvals: 48
+    # 1 open roles when added; USCIS name: WESTERN UNION LLC
+  - name: Reddit
+    ats: greenhouse
+    token: reddit
+    h1b_approvals: 40
+    # 155 open roles when added; USCIS name: REDDIT INC
+  - name: Spotify
+    ats: lever
+    token: spotify
+    h1b_approvals: 38
+    # 81 open roles when added; USCIS name: SPOTIFY USA INC
+  - name: Dropbox
+    ats: greenhouse
+    token: dropbox
+    h1b_approvals: 33
+    # 47 open roles when added; USCIS name: DROPBOX INC
+  - name: GoDaddy
+    ats: greenhouse
+    token: godaddy
+    h1b_approvals: 33
+    # 36 open roles when added; USCIS name: GODADDY COM LLC
+  - name: Roku
+    ats: greenhouse
+    token: roku
+    h1b_approvals: 27
+    # 253 open roles when added; USCIS name: ROKU INC
+  - name: ZoomInfo Technologies LLC
+    ats: greenhouse
+    token: zoominfo
+    h1b_approvals: 27
+    # 106 open roles when added; USCIS name: ZOOMINFO TECHNOLOGIES LLC
+  - name: Coupa Software
+    ats: lever
+    token: coupa
+    h1b_approvals: 23
+    # 24 open roles when added; USCIS name: COUPA SOFTWARE INC
+  - name: Akuna Capital
+    ats: greenhouse
+    token: akunacapital
+    h1b_approvals: 20
+    # 42 open roles when added; USCIS name: AKUNA CAPITAL LLC
+  - name: Verkada
+    ats: greenhouse
+    token: verkada
+    h1b_approvals: 19
+    # 301 open roles when added; USCIS name: VERKADA INC
+  - name: Oportun
+    ats: greenhouse
+    token: oportun
+    h1b_approvals: 16
+    # 37 open roles when added; USCIS name: OPORTUN INC
+  - name: 'Point72 '
+    ats: greenhouse
+    token: point72
+    h1b_approvals: 16
+    # 220 open roles when added; USCIS name: POINT72 LP
+  - name: Medica
+    ats: recruitee
+    token: medica
+    h1b_approvals: 15
+    # 10 open roles when added; USCIS name: MEDICA SERVICES COMPANY LLC
+  - name: Nextdoor
+    ats: greenhouse
+    token: nextdoor
+    h1b_approvals: 14
+    # 21 open roles when added; USCIS name: NEXTDOOR INC
+  - name: OneTrust
+    ats: greenhouse
+    token: onetrust
+    h1b_approvals: 14
+    # 90 open roles when added; USCIS name: ONETRUST LLC
+  - name: CarGurus
+    ats: greenhouse
+    token: cargurus
+    h1b_approvals: 13
+    # 44 open roles when added; USCIS name: CARGURUS INC
+  - name: Upgrade
+    ats: greenhouse
+    token: upgrade
+    h1b_approvals: 13
+    # 33 open roles when added; USCIS name: UPGRADE INC
+  - name: Smartsheet
+    ats: greenhouse
+    token: smartsheet
+    h1b_approvals: 12
+    # 95 open roles when added; USCIS name: SMARTSHEET INC
+  - name: Enova International
+    ats: greenhouse
+    token: enova
+    h1b_approvals: 12
+    # 30 open roles when added; USCIS name: ENOVA FINANCIAL HOLDINGS LLC
+  - name: Elsevier
+    ats: greenhouse
+    token: elsevier
+    h1b_approvals: 10
+    # 9 open roles when added; USCIS name: ELSEVIER INC
+  - name: Klaviyo
+    ats: greenhouse
+    token: klaviyo
+    h1b_approvals: 10
+    # 147 open roles when added; USCIS name: KLAVIYO INC
+  - name: Snaplogic
+    ats: lever
+    token: snaplogic
+    h1b_approvals: 10
+    # 9 open roles when added; USCIS name: SNAPLOGIC INC
+  - name: Flextrade Systems
+    ats: recruitee
+    token: flextrade
+    h1b_approvals: 9
+    # 34 open roles when added; USCIS name: FLEXTRADE SYSTEMS INC
+  - name: Motive
+    ats: greenhouse
+    token: motive
+    h1b_approvals: 9
+    # 2 open roles when added; USCIS name: MOTIVE TECHNOLOGIES INC
+  - name: Galileo
+    ats: greenhouse
+    token: galileo
+    h1b_approvals: 9
+    # 14 open roles when added; USCIS name: GALILEO FINANCIAL TECHNOLOGIES LLC
+  - name: Tower Research Capital
+    ats: greenhouse
+    token: towerresearchcapital
+    h1b_approvals: 9
+    # 91 open roles when added; USCIS name: TOWER RESEARCH CAPITAL LLC
+  - name: Sophos
+    ats: lever
+    token: sophos
+    h1b_approvals: 8
+    # 85 open roles when added; USCIS name: SOPHOS INC
+  - name: LendingTree
+    ats: greenhouse
+    token: lendingtree
+    h1b_approvals: 8
+    # 17 open roles when added; USCIS name: LENDINGTREE LLC
+  - name: Nium
+    ats: lever
+    token: nium
+    h1b_approvals: 8
+    # 21 open roles when added; USCIS name: NIUM INC
+  - name: WorldQuant
+    ats: greenhouse
+    token: worldquant
+    h1b_approvals: 8
+    # 102 open roles when added; USCIS name: WORLDQUANT LLC
+  - name: Benchling
+    ats: ashby
+    token: benchling
+    h1b_approvals: 7
+    # 56 open roles when added; USCIS name: BENCHLING INC
+  - name: Further
+    ats: greenhouse
+    token: further
+    h1b_approvals: 7
+    # 18 open roles when added; USCIS name: FURTHER LLC
+  - name: Life360
+    ats: greenhouse
+    token: life360
+    h1b_approvals: 7
+    # 15 open roles when added; USCIS name: LIFE360 INC
+  - name: Narvar
+    ats: greenhouse
+    token: narvar
+    h1b_approvals: 7
+    # 4 open roles when added; USCIS name: NARVAR INC
+  - name: Nerdwallet
+    ats: ashby
+    token: nerdwallet
+    h1b_approvals: 7
+    # 21 open roles when added; USCIS name: NERDWALLET INC
+  - name: Arch Capital
+    ats: ashby
+    token: arch
+    h1b_approvals: 7
+    # 6 open roles when added; USCIS name: ARCH CAPITAL SERVICES LLC
+  - name: Jane Street
+    ats: greenhouse
+    token: janestreet
+    h1b_approvals: 7
+    # 228 open roles when added; USCIS name: JANE STREET GROUP LLC
+  - name: Branch Metrics
+    ats: greenhouse
+    token: branchmetrics
+    h1b_approvals: 6
+    # 16 open roles when added; USCIS name: BRANCH METRICS INC
+  - name: Collibra
+    ats: greenhouse
+    token: collibra
+    h1b_approvals: 6
+    # 34 open roles when added; USCIS name: COLLIBRA INC
+  - name: Discord
+    ats: greenhouse
+    token: discord
+    h1b_approvals: 6
+    # 49 open roles when added; USCIS name: DISCORD INC
+  - name: InterSystems
+    ats: greenhouse
+    token: intersystems
+    h1b_approvals: 6
+    # 133 open roles when added; USCIS name: INTERSYSTEMS CORPORATION
+  - name: Rescale
+    ats: ashby
+    token: rescale
+    h1b_approvals: 6
+    # 19 open roles when added; USCIS name: RESCALE INC
+  - name: Collective Health
+    ats: greenhouse
+    token: collectivehealth
+    h1b_approvals: 6
+    # 1 open roles when added; USCIS name: COLLECTIVEHEALTH INC
+  - name: Convera
+    ats: greenhouse
+    token: convera
+    h1b_approvals: 6
+    # 54 open roles when added; USCIS name: CONVERA USA LLC
+  - name: EvolutionIQ
+    ats: greenhouse
+    token: evolutioniq
+    h1b_approvals: 6
+    # 18 open roles when added; USCIS name: DEEPFRAUD TECHNOLOGIES INC DBA EVOLUTIONIQ
+  - name: Bandwidth
+    ats: greenhouse
+    token: bandwidth
+    h1b_approvals: 5
+    # 28 open roles when added; USCIS name: BANDWIDTH INC
+  - name: Bungie
+    ats: greenhouse
+    token: bungie
+    h1b_approvals: 5
+    # 5 open roles when added; USCIS name: BUNGIE INC
+  - name: Ensono
+    ats: greenhouse
+    token: ensono
+    h1b_approvals: 5
+    # 81 open roles when added; USCIS name: ENSONO INC
+  - name: IXL Learning
+    ats: greenhouse
+    token: ixllearning
+    h1b_approvals: 5
+    # 112 open roles when added; USCIS name: IXL LEARNING INC
+  - name: MetTel
+    ats: greenhouse
+    token: mettel
+    h1b_approvals: 5
+    # 23 open roles when added; USCIS name: MANHATTAN TELECOMMUNICATIONS CORPORATION DBA METTEL
+  - name: Nextiva
+    ats: greenhouse
+    token: nextiva
+    h1b_approvals: 5
+    # 33 open roles when added; USCIS name: NEXTIVA INC
+  - name: Patreon
+    ats: ashby
+    token: patreon
+    h1b_approvals: 5
+    # 14 open roles when added; USCIS name: PATREON INC
+  - name: Reltio
+    ats: greenhouse
+    token: reltio
+    h1b_approvals: 5
+    # 33 open roles when added; USCIS name: RELTIO INC
+  - name: Rockstar Games
+    ats: greenhouse
+    token: rockstargames
+    h1b_approvals: 5
+    # 49 open roles when added; USCIS name: ROCKSTAR GAMES INC
+  - name: Sift Science
+    ats: ashby
+    token: sift
+    h1b_approvals: 5
+    # 6 open roles when added; USCIS name: SIFT SCIENCE INC
+  - name: Smarsh
+    ats: lever
+    token: smarsh
+    h1b_approvals: 5
+    # 19 open roles when added; USCIS name: SMARSH INC
+  - name: Yext
+    ats: greenhouse
+    token: yext
+    h1b_approvals: 5
+    # 21 open roles when added; USCIS name: YEXT INC
+  - name: Coalition, Inc.
+    ats: greenhouse
+    token: coalition
+    h1b_approvals: 5
+    # 35 open roles when added; USCIS name: COALITION INC
+  - name: Acquia
+    ats: greenhouse
+    token: acquia
+    h1b_approvals: 4
+    # 10 open roles when added; USCIS name: ACQUIA INC
+  - name: Activecampaign
+    ats: lever
+    token: activecampaign
+    h1b_approvals: 4
+    # 12 open roles when added; USCIS name: ACTIVECAMPAIGN LLC
+  - name: Cambridge Mobile Telematics
+    ats: greenhouse
+    token: cambridgemobiletelematics
+    h1b_approvals: 4
+    # 20 open roles when added; USCIS name: CAMBRIDGE MOBILE TELEMATICS INC
+  - name: Doximity
+    ats: greenhouse
+    token: doximity
+    h1b_approvals: 4
+    # 13 open roles when added; USCIS name: DOXIMITY INC
+  - name: Epic Games
+    ats: greenhouse
+    token: epicgames
+    h1b_approvals: 4
+    # 155 open roles when added; USCIS name: EPIC GAMES INC
+  - name: Fictiv
+    ats: greenhouse
+    token: fictiv
+    h1b_approvals: 4
+    # 95 open roles when added; USCIS name: FICTIV INC
+  - name: Included Health
+    ats: lever
+    token: includedhealth
+    h1b_approvals: 4
+    # 54 open roles when added; USCIS name: GRAND ROUNDS INC DBA INCLUDED HEALTH INC
+  - name: ISN Software Corporation
+    ats: greenhouse
+    token: isn
+    h1b_approvals: 4
+    # 16 open roles when added; USCIS name: ISN SOFTWARE CORPORATION
+  - name: Leantaas
+    ats: lever
+    token: leantaas
+    h1b_approvals: 4
+    # 3 open roles when added; USCIS name: LEANTAAS INC
+  - name: Lookout
+    ats: greenhouse
+    token: lookout
+    h1b_approvals: 4
+    # 4 open roles when added; USCIS name: LOOKOUT INC
+  - name: Opengov
+    ats: ashby
+    token: opengov
+    h1b_approvals: 4
+    # 69 open roles when added; USCIS name: OPENGOV INC
+  - name: Pantheon Systems, Inc
+    ats: greenhouse
+    token: pantheon
+    h1b_approvals: 4
+    # 22 open roles when added; USCIS name: PANTHEON SYSTEMS INC
+  - name: Sitecore
+    ats: ashby
+    token: sitecore
+    h1b_approvals: 4
+    # 34 open roles when added; USCIS name: SITECORE USA INC
+  - name: Creatoriq
+    ats: ashby
+    token: creatoriq
+    h1b_approvals: 4
+    # 29 open roles when added; USCIS name: SOCIALEDGE INC DBA CREATORIQ
+  - name: Wasabi Technologies
+    ats: greenhouse
+    token: wasabi
+    h1b_approvals: 4
+    # 13 open roles when added; USCIS name: WASABI TECHNOLOGIES LLC
+  - name: Whoop
+    ats: ashby
+    token: whoop
+    h1b_approvals: 4
+    # 162 open roles when added; USCIS name: WHOOP INC
+  - name: Bracebridge Capital
+    ats: greenhouse
+    token: bracebridgecapital
+    h1b_approvals: 4
+    # 6 open roles when added; USCIS name: BRACEBRIDGE CAPITAL LLC
+  - name: Credible
+    ats: greenhouse
+    token: credible
+    h1b_approvals: 4
+    # 12 open roles when added; USCIS name: CREDIBLE LABS INC
+  - name: Level
+    ats: ashby
+    token: level
+    h1b_approvals: 4
+    # 34 open roles when added; USCIS name: LEVEL INC
+  - name: PitchBook Data
+    ats: greenhouse
+    token: pitchbookdata
+    h1b_approvals: 4
+    # 23 open roles when added; USCIS name: PITCHBOOK DATA INC
+  - name: Sezzle
+    ats: greenhouse
+    token: sezzle
+    h1b_approvals: 4
+    # 220 open roles when added; USCIS name: SEZZLE INC
+  - name: Spotter
+    ats: greenhouse
+    token: spotter
+    h1b_approvals: 4
+    # 4 open roles when added; USCIS name: SPOTTER INC
+  - name: Viking Global Investors
+    ats: greenhouse
+    token: vikingglobalinvestors
+    h1b_approvals: 4
+    # 5 open roles when added; USCIS name: VIKING GLOBAL INVESTORS LP
+  - name: Baidu USA
+    ats: greenhouse
+    token: baidu
+    h1b_approvals: 3
+    # 28 open roles when added; USCIS name: BAIDU USA LLC
+  - name: Cherre
+    ats: lever
+    token: cherre
+    h1b_approvals: 3
+    # 1 open roles when added; USCIS name: CHERRE INC
+  - name: Chowbus
+    ats: greenhouse
+    token: chowbus
+    h1b_approvals: 3
+    # 80 open roles when added; USCIS name: CHOWBUS INC
+  - name: Demandbase
+    ats: ashby
+    token: demandbase
+    h1b_approvals: 3
+    # 14 open roles when added; USCIS name: DEMANDBASE INC
+  - name: Deposco
+    ats: ashby
+    token: deposco
+    h1b_approvals: 3
+    # 15 open roles when added; USCIS name: DEPOSCO INC
+  - name: Druva
+    ats: greenhouse
+    token: druva
+    h1b_approvals: 3
+    # 36 open roles when added; USCIS name: DRUVA INC
+  - name: Envoy
+    ats: ashby
+    token: envoy
+    h1b_approvals: 3
+    # 19 open roles when added; USCIS name: ENVOY INC
+  - name: impact.com
+    ats: greenhouse
+    token: impact
+    h1b_approvals: 3
+    # 79 open roles when added; USCIS name: IMPACT TECH INC
+  - name: Lyra Health
+    ats: lever
+    token: lyrahealth
+    h1b_approvals: 3
+    # 573 open roles when added; USCIS name: LYRA HEALTH INC
+  - name: Quora
+    ats: ashby
+    token: quora
+    h1b_approvals: 3
+    # 5 open roles when added; USCIS name: QUORA INC
+  - name: Sentilink
+    ats: ashby
+    token: sentilink
+    h1b_approvals: 3
+    # 52 open roles when added; USCIS name: SENTILINK CORP
+  - name: Take-Two Interactive Software, Inc.
+    ats: greenhouse
+    token: taketwo
+    h1b_approvals: 3
+    # 36 open roles when added; USCIS name: TAKE TWO INTERACTIVE SOFTWARE INC
+  - name: Taskrabbit
+    ats: greenhouse
+    token: taskrabbit
+    h1b_approvals: 3
+    # 15 open roles when added; USCIS name: TASKRABBIT INC
+  - name: Unqork
+    ats: greenhouse
+    token: unqork
+    h1b_approvals: 3
+    # 1 open roles when added; USCIS name: UNQORK INC
+  - name: Swayable
+    ats: greenhouse
+    token: swayable
+    h1b_approvals: 3
+    # 15 open roles when added; USCIS name: WORLDVIEW INCORPORATED DBA SWAYABLE
+  - name: Akoya
+    ats: greenhouse
+    token: akoya
+    h1b_approvals: 3
+    # 5 open roles when added; USCIS name: AKOYA LLC
+  - name: Arta Finance
+    ats: ashby
+    token: artafinance
+    h1b_approvals: 3
+    # 11 open roles when added; USCIS name: ARTA FINANCE INC
+  - name: Bottomline
+    ats: greenhouse
+    token: bottomlinetechnologies
+    h1b_approvals: 3
+    # 30 open roles when added; USCIS name: BOTTOMLINE TECHNOLOGIES INC
+  - name: Citcon
+    ats: lever
+    token: citcon
+    h1b_approvals: 3
+    # 2 open roles when added; USCIS name: CITCON USA LLC
+  - name: Earnest
+    ats: greenhouse
+    token: earnest
+    h1b_approvals: 3
+    # 7 open roles when added; USCIS name: EARNEST LLC
+  - name: Current
+    ats: greenhouse
+    token: current
+    h1b_approvals: 3
+    # 8 open roles when added; USCIS name: FINCO SERVICES INC DBA CURRENT
+  - name: Goodleap
+    ats: lever
+    token: goodleap
+    h1b_approvals: 3
+    # 34 open roles when added; USCIS name: GOODLEAP LLC
+  - name: Human Interest
+    ats: greenhouse
+    token: humaninterest
+    h1b_approvals: 3
+    # 74 open roles when added; USCIS name: HUMAN INTEREST INC
+  - name: Kestra Financial
+    ats: ashby
+    token: kestra
+    h1b_approvals: 3
+    # 11 open roles when added; USCIS name: KESTRA FINANCIAL INC
+  - name: LINK
+    ats: greenhouse
+    token: link
+    h1b_approvals: 3
+    # 8 open roles when added; USCIS name: LINK FINANCIAL TECHNOLOGIES INC

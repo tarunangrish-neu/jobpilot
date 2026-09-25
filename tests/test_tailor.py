@@ -315,3 +315,25 @@ def test_tailor_renders_one_page_and_records(tailor_root, fake_llm):
         audit = json.loads(app.tailoring_json)
         assert audit["report"]["rejected"][0]["new_entities"] == ["70", "dropped 35"]
         assert sess.exec(select(Event).where(Event.type == "tailored")).one()
+
+
+def test_everyday_letter_wording_is_not_a_borrowed_claim():
+    """Regression: "experience", "understanding", "role" dropped almost every cover-letter sentence."""
+    from jobpilot.tailor.verify import unsupported_claims
+
+    jd = ("You will bring experience and a deep understanding to this role, ensuring quality work across "
+          "applications. You design unit, functional and integration testing strategies.")
+    ok = "With my experience, I bring a deep understanding of ledgers to this role, ensuring quality work."
+    assert unsupported_claims(ok, FACTS, jd, "Stripe") == []
+    # Domain vocabulary the resume never mentions is still a claim.
+    claim = "I design unit, functional and integration testing strategies."
+    assert {"unit", "testing"} <= set(unsupported_claims(claim, FACTS, jd, "Stripe"))
+
+
+def test_letter_may_name_its_company_but_not_claim_unlisted_tech():
+    from jobpilot.tailor.verify import verify_free_text
+
+    jd = "Stripe builds Angular dashboards."
+    assert not verify_free_text("At Stripe, I would build ledgers.", FACTS, allowed_context=jd, company="Stripe")
+    claim = verify_free_text("I build UI apps with Angular.", FACTS, allowed_context=jd, company="Stripe")
+    assert "Angular" in claim.items()
